@@ -1,7 +1,7 @@
-﻿using Microsoft.EntityFrameworkCore;
-using HomeFinancial.Repository.Models;
+﻿using HomeFinancial.Data.Models;
+using Microsoft.EntityFrameworkCore;
 
-namespace HomeFinancial.Repository;
+namespace HomeFinancial.Data;
 
 public class HomeFinancialDbContext : DbContext
 {

@@ -2,7 +2,7 @@
 using Microsoft.EntityFrameworkCore.Design;
 using Microsoft.Extensions.Configuration;
 
-namespace HomeFinancial.Repository;
+namespace HomeFinancial.Data;
 
 public class HomeFinancialDbContextFactory : IDesignTimeDbContextFactory<HomeFinancialDbContext>
 {
