@@ -1,0 +1,65 @@
+2025-01-22 00:23:22.119 +03:00 [INF] Starting the application.
+2025-01-22 00:23:22.283 +03:00 [INF] Checking database connection.
+2025-01-22 00:23:23.127 +03:00 [INF] Successfully connected to the database.
+2025-01-22 00:23:23.194 +03:00 [INF] Now listening on: http://localhost:5032
+2025-01-22 00:23:23.195 +03:00 [INF] Application started. Press Ctrl+C to shut down.
+2025-01-22 00:23:23.196 +03:00 [INF] Hosting environment: Development
+2025-01-22 00:23:23.196 +03:00 [INF] Content root path: C:\Pet.Projects\HomeFinancial\HomeFinancial.DataService
+2025-01-22 00:23:24.847 +03:00 [INF] Request starting HTTP/1.1 GET http://localhost:5032/swagger/index.html - null null
+2025-01-22 00:23:25.074 +03:00 [INF] Request finished HTTP/1.1 GET http://localhost:5032/swagger/index.html - 200 null text/html;charset=utf-8 227.6924ms
+2025-01-22 00:23:25.113 +03:00 [INF] Request starting HTTP/1.1 GET http://localhost:5032/swagger/index.js - null null
+2025-01-22 00:23:25.119 +03:00 [INF] Request finished HTTP/1.1 GET http://localhost:5032/swagger/index.js - 200 null application/javascript;charset=utf-8 6.9198ms
+2025-01-22 00:23:25.169 +03:00 [INF] Request starting HTTP/1.1 GET http://localhost:5032/swagger/v1/swagger.json - null null
+2025-01-22 00:23:25.178 +03:00 [INF] No action descriptors found. This may indicate an incorrectly configured application or missing application parts. To learn more, visit https://aka.ms/aspnet/mvc/app-parts
+2025-01-22 00:23:25.280 +03:00 [INF] Request finished HTTP/1.1 GET http://localhost:5032/swagger/v1/swagger.json - 200 null application/json;charset=utf-8 111.2636ms
+2025-01-22 00:27:10.898 +03:00 [INF] Application is shutting down...
+2025-01-22 00:40:44.742 +03:00 [INF] Starting the application.
+2025-01-22 00:40:44.984 +03:00 [INF] Checking database connection.
+2025-01-22 00:40:45.894 +03:00 [INF] Successfully connected to the database.
+2025-01-22 00:40:46.048 +03:00 [INF] Now listening on: http://localhost:5032
+2025-01-22 00:40:46.050 +03:00 [INF] Application started. Press Ctrl+C to shut down.
+2025-01-22 00:40:46.051 +03:00 [INF] Hosting environment: Development
+2025-01-22 00:40:46.051 +03:00 [INF] Content root path: C:\Pet.Projects\HomeFinancial\HomeFinancial.DataService
+2025-01-22 00:40:47.670 +03:00 [INF] Request starting HTTP/1.1 GET http://localhost:5032/swagger/index.html - null null
+2025-01-22 00:40:48.042 +03:00 [INF] Request finished HTTP/1.1 GET http://localhost:5032/swagger/index.html - 200 null text/html;charset=utf-8 373.5237ms
+2025-01-22 00:40:49.890 +03:00 [INF] Request starting HTTP/1.1 GET http://localhost:5032/swagger/index.js - null null
+2025-01-22 00:40:49.894 +03:00 [INF] Request finished HTTP/1.1 GET http://localhost:5032/swagger/index.js - 200 null application/javascript;charset=utf-8 4.3042ms
+2025-01-22 00:40:50.515 +03:00 [INF] Request starting HTTP/1.1 GET http://localhost:5032/swagger/v1/swagger.json - null null
+2025-01-22 00:40:50.524 +03:00 [INF] No action descriptors found. This may indicate an incorrectly configured application or missing application parts. To learn more, visit https://aka.ms/aspnet/mvc/app-parts
+2025-01-22 00:40:50.636 +03:00 [INF] Request finished HTTP/1.1 GET http://localhost:5032/swagger/v1/swagger.json - 200 null application/json;charset=utf-8 121.325ms
+2025-01-22 00:49:15.614 +03:00 [INF] Request starting HTTP/1.1 GET http://localhost:5032/swagger/index.html - null null
+2025-01-22 00:49:15.616 +03:00 [INF] Request finished HTTP/1.1 GET http://localhost:5032/swagger/index.html - 200 null text/html;charset=utf-8 5.3694ms
+2025-01-22 00:49:15.694 +03:00 [INF] Request starting HTTP/1.1 GET http://localhost:5032/swagger/index.js - null null
+2025-01-22 00:49:15.697 +03:00 [INF] Request finished HTTP/1.1 GET http://localhost:5032/swagger/index.js - 200 null application/javascript;charset=utf-8 3.0064ms
+2025-01-22 00:49:15.750 +03:00 [INF] Request starting HTTP/1.1 GET http://localhost:5032/swagger/v1/swagger.json - null null
+2025-01-22 00:49:15.755 +03:00 [INF] Request finished HTTP/1.1 GET http://localhost:5032/swagger/v1/swagger.json - 200 null application/json;charset=utf-8 5.489ms
+2025-01-22 01:27:38.612 +03:00 [INF] Starting the application.
+2025-01-22 01:27:38.858 +03:00 [INF] Checking database connection.
+2025-01-22 01:27:39.539 +03:00 [INF] Successfully connected to the database.
+2025-01-22 01:27:39.611 +03:00 [INF] Now listening on: http://localhost:5032
+2025-01-22 01:27:39.613 +03:00 [INF] Application started. Press Ctrl+C to shut down.
+2025-01-22 01:27:39.614 +03:00 [INF] Hosting environment: Development
+2025-01-22 01:27:39.614 +03:00 [INF] Content root path: C:\Pet.Projects\HomeFinancial\HomeFinancial.DataService
+2025-01-22 01:27:40.495 +03:00 [INF] Request starting HTTP/1.1 GET http://localhost:5032/swagger/index.html - null null
+2025-01-22 01:27:40.718 +03:00 [INF] Request finished HTTP/1.1 GET http://localhost:5032/swagger/index.html - 200 null text/html;charset=utf-8 223.6375ms
+2025-01-22 01:27:40.758 +03:00 [INF] Request starting HTTP/1.1 GET http://localhost:5032/swagger/index.js - null null
+2025-01-22 01:27:40.766 +03:00 [INF] Request finished HTTP/1.1 GET http://localhost:5032/swagger/index.js - 200 null application/javascript;charset=utf-8 8.716ms
+2025-01-22 01:27:40.821 +03:00 [INF] Request starting HTTP/1.1 GET http://localhost:5032/swagger/v1/swagger.json - null null
+2025-01-22 01:27:40.834 +03:00 [INF] No action descriptors found. This may indicate an incorrectly configured application or missing application parts. To learn more, visit https://aka.ms/aspnet/mvc/app-parts
+2025-01-22 01:27:40.933 +03:00 [INF] Request finished HTTP/1.1 GET http://localhost:5032/swagger/v1/swagger.json - 200 null application/json;charset=utf-8 111.6753ms
+2025-01-22 01:30:02.762 +03:00 [INF] Application is shutting down...
+2025-01-22 01:41:08.051 +03:00 [INF] Starting the application.
+2025-01-22 01:41:08.294 +03:00 [INF] Checking database connection.
+2025-01-22 01:41:09.064 +03:00 [INF] Successfully connected to the database.
+2025-01-22 01:41:09.129 +03:00 [INF] Now listening on: http://localhost:5032
+2025-01-22 01:41:09.131 +03:00 [INF] Application started. Press Ctrl+C to shut down.
+2025-01-22 01:41:09.131 +03:00 [INF] Hosting environment: Development
+2025-01-22 01:41:09.132 +03:00 [INF] Content root path: C:\Pet.Projects\HomeFinancial\HomeFinancial.DataService
+2025-01-22 01:41:09.728 +03:00 [INF] Request starting HTTP/1.1 GET http://localhost:5032/swagger/index.html - null null
+2025-01-22 01:41:09.951 +03:00 [INF] Request finished HTTP/1.1 GET http://localhost:5032/swagger/index.html - 200 null text/html;charset=utf-8 223.3753ms
+2025-01-22 01:41:09.998 +03:00 [INF] Request starting HTTP/1.1 GET http://localhost:5032/swagger/index.js - null null
+2025-01-22 01:41:10.004 +03:00 [INF] Request finished HTTP/1.1 GET http://localhost:5032/swagger/index.js - 200 null application/javascript;charset=utf-8 6.877ms
+2025-01-22 01:41:10.056 +03:00 [INF] Request starting HTTP/1.1 GET http://localhost:5032/swagger/v1/swagger.json - null null
+2025-01-22 01:41:10.066 +03:00 [INF] No action descriptors found. This may indicate an incorrectly configured application or missing application parts. To learn more, visit https://aka.ms/aspnet/mvc/app-parts
+2025-01-22 01:41:10.165 +03:00 [INF] Request finished HTTP/1.1 GET http://localhost:5032/swagger/v1/swagger.json - 200 null application/json;charset=utf-8 109.1716ms
+2025-01-22 01:43:19.200 +03:00 [INF] Application is shutting down...
