@@ -7,8 +7,12 @@ using Microsoft.Extensions.DependencyInjection;
 namespace HomeFinancial.Repository
 {
     // DbContext
-    public class HomeFinancialDbContext(DbContextOptions<HomeFinancialDbContext> options) : DbContext(options)
+    public class HomeFinancialDbContext : DbContext
     {
+        public HomeFinancialDbContext(DbContextOptions<HomeFinancialDbContext> options) : base(options)
+        {
+        }
+
         public DbSet<Category> Categories { get; set; }
         public DbSet<BankTransaction> BankTransactions { get; set; }
         public DbSet<ImportedFile> ImportedFiles { get; set; }
@@ -27,7 +31,7 @@ namespace HomeFinancial.Repository
     // Generic Repository Implementation
     public class GenericRepository<T> : IGenericRepository<T> where T : class
     {
-        private readonly HomeFinancialDbContext _dbContext;
+        protected readonly HomeFinancialDbContext _dbContext;
         protected readonly ILogger<GenericRepository<T>> Logger;
         protected readonly DbSet<T> DbSet;
 
@@ -72,7 +76,9 @@ namespace HomeFinancial.Repository
         Task<Category> GetOrCreateAsync(string name);
     }
 
-    public interface ITransactionRepository : IGenericRepository<BankTransaction>;
+    public interface ITransactionRepository : IGenericRepository<BankTransaction>
+    {
+    }
 
     public interface IFileRepository : IGenericRepository<ImportedFile>
     {
@@ -80,9 +86,13 @@ namespace HomeFinancial.Repository
     }
 
     // Specific Repositories Implementations
-    public class CategoryRepository(HomeFinancialDbContext dbContext, ILogger<GenericRepository<Category>> logger)
-        : GenericRepository<Category>(dbContext, logger), ICategoryRepository
+    public class CategoryRepository : GenericRepository<Category>, ICategoryRepository
     {
+        public CategoryRepository(HomeFinancialDbContext dbContext, ILogger<GenericRepository<Category>> logger)
+            : base(dbContext, logger)
+        {
+        }
+
         private async Task<Category?> GetByNameAsync(string name)
         {
             return await DbSet.FirstOrDefaultAsync(c => c.Name == name);
@@ -111,13 +121,16 @@ namespace HomeFinancial.Repository
             }
             Logger.LogWarning("Category '{ExistingCategory}' already exists.", exist.Name);
             throw new InvalidOperationException($"Category '{exist.Name}' already exists.");
-
         }
     }
 
-    public class TransactionRepository(HomeFinancialDbContext dbContext, ILogger<GenericRepository<BankTransaction>> logger)
-        : GenericRepository<BankTransaction>(dbContext, logger), ITransactionRepository
+    public class TransactionRepository : GenericRepository<BankTransaction>, ITransactionRepository
     {
+        public TransactionRepository(HomeFinancialDbContext dbContext, ILogger<GenericRepository<BankTransaction>> logger)
+            : base(dbContext, logger)
+        {
+        }
+
         public override async Task<BankTransaction> CreateAsync(BankTransaction transaction)
         {
             Logger.LogInformation("Attempting to add transaction with FITID: {FitId}", transaction.FitId);
@@ -127,13 +140,16 @@ namespace HomeFinancial.Repository
             }
             Logger.LogWarning("Transaction with FITID={FitId} already exists.", transaction.FitId);
             throw new InvalidOperationException($"FITID={transaction.FitId} already exists.");
-
         }
     }
 
-    public class FileRepository(HomeFinancialDbContext dbContext, ILogger<GenericRepository<ImportedFile>> logger)
-        : GenericRepository<ImportedFile>(dbContext, logger), IFileRepository
+    public class FileRepository : GenericRepository<ImportedFile>, IFileRepository
     {
+        public FileRepository(HomeFinancialDbContext dbContext, ILogger<GenericRepository<ImportedFile>> logger)
+            : base(dbContext, logger)
+        {
+        }
+
         public async Task<bool> ExistsAsync(string fileName)
         {
             return await DbSet.AnyAsync(f => f.FileName == fileName);

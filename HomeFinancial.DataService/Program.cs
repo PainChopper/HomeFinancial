@@ -1,10 +1,11 @@
 // Program.cs
 using HomeFinancial.Repository;
+using HomeFinancial.DTOs;
+using HomeFinancial.Mapping;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
 using Microsoft.AspNetCore.Diagnostics;
 using System.Text.Json;
-using HomeFinancial.Data.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -35,6 +36,9 @@ builder.Services.AddDbContext<HomeFinancialDbContext>(options =>
 
 // Register repositories using extension method
 builder.Services.AddRepositories();
+
+// Register Mapperly generated mapper
+builder.Services.AddSingleton<AppMapper>();
 
 // Register Swagger services
 builder.Services.AddEndpointsApiExplorer();
@@ -69,7 +73,7 @@ var logger = app.Services.GetRequiredService<ILogger<Program>>();
 
 logger.LogInformation("Starting the application.");
 
-// Apply migrations and check database connection
+// Check database connection
 using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
@@ -97,18 +101,25 @@ if (app.Environment.IsDevelopment())
 
 // Grouped Routes for Categories
 var categoryGroup = app.MapGroup("/categories");
-categoryGroup.MapGet("/", async (ICategoryRepository categoryRepo) => Results.Ok((object?)await categoryRepo.GetAllAsync()));
-categoryGroup.MapGet("/{id:int}", async (ICategoryRepository categoryRepo, int id) =>
+categoryGroup.MapGet("/", async (ICategoryRepository categoryRepo, AppMapper mapper) =>
+{
+    var categories = await categoryRepo.GetAllAsync();
+    var categoryDtos = categories.Select(c => mapper.CategoryToDto(c));
+    return Results.Ok(categoryDtos);
+});
+categoryGroup.MapGet("/{id:int}", async (ICategoryRepository categoryRepo, AppMapper mapper, int id) =>
 {
     var category = await categoryRepo.GetByIdAsync(id);
-    return category != null ? Results.Ok(category) : Results.NotFound();
+    return category != null ? Results.Ok(mapper.CategoryToDto(category)) : Results.NotFound();
 });
-categoryGroup.MapPost("/", async (ICategoryRepository categoryRepo, Category category) =>
+categoryGroup.MapPost("/", async (ICategoryRepository categoryRepo, AppMapper mapper, CreateCategoryDto createDto) =>
 {
+    var category = mapper.DtoToCategory(createDto);
     try
     {
         var createdCategory = await categoryRepo.CreateAsync(category);
-        return Results.Created($"/categories/{createdCategory.Id}", createdCategory);
+        var categoryDto = mapper.CategoryToDto(createdCategory);
+        return Results.Created($"/categories/{createdCategory.Id}", categoryDto);
     }
     catch (InvalidOperationException ex)
     {
@@ -118,22 +129,27 @@ categoryGroup.MapPost("/", async (ICategoryRepository categoryRepo, Category cat
 
 // Grouped Routes for Transactions
 var transactionGroup = app.MapGroup("/transactions");
-transactionGroup.MapGet("/", async (ITransactionRepository transactionRepo) => Results.Ok((object?)await transactionRepo.GetAllAsync()));
-transactionGroup.MapGet("/{id:int}", async (ITransactionRepository transactionRepo, int id) =>
+transactionGroup.MapGet("/", async (ITransactionRepository transactionRepo, AppMapper mapper) =>
+{
+    var transactions = await transactionRepo.GetAllAsync();
+    var transactionDtos = transactions.Select(tx => mapper.BankTransactionToDto(tx));
+    return Results.Ok(transactionDtos);
+});
+transactionGroup.MapGet("/{id:int}", async (ITransactionRepository transactionRepo, AppMapper mapper, int id) =>
 {
     var transaction = await transactionRepo.GetByIdAsync(id);
-    return transaction != null ? Results.Ok(transaction) : Results.NotFound();
+    return transaction != null ? Results.Ok(mapper.BankTransactionToDto(transaction)) : Results.NotFound();
 });
-transactionGroup.MapPost("/", async (ITransactionRepository transactionRepo, ICategoryRepository categoryRepo, BankTransaction tx) =>
+transactionGroup.MapPost("/", async (ITransactionRepository transactionRepo, ICategoryRepository categoryRepo, AppMapper mapper, CreateBankTransactionDto createDto) =>
 {
-    var category = await categoryRepo.GetOrCreateAsync(tx.Category.Name);
-
-    tx.CategoryId = category.Id;
+    var category = await categoryRepo.GetOrCreateAsync(createDto.CategoryName);
+    var transaction = mapper.DtoToBankTransaction(createDto, category.Id);
 
     try
     {
-        var createdTransaction = await transactionRepo.CreateAsync(tx);
-        return Results.Created($"/transactions/{createdTransaction.Id}", createdTransaction);
+        var createdTransaction = await transactionRepo.CreateAsync(transaction);
+        var transactionDto = mapper.BankTransactionToDto(createdTransaction);
+        return Results.Created($"/transactions/{createdTransaction.Id}", transactionDto);
     }
     catch (InvalidOperationException ex)
     {
@@ -143,19 +159,30 @@ transactionGroup.MapPost("/", async (ITransactionRepository transactionRepo, ICa
 
 // Grouped Routes for Files
 var fileGroup = app.MapGroup("/files");
-fileGroup.MapGet("/exist/{fileName}", async (IFileRepository fileRepo, string fileName) => Results.Ok((object?)await fileRepo.ExistsAsync(fileName)));
-fileGroup.MapGet("/", async (IFileRepository fileRepo) => Results.Ok((object?)await fileRepo.GetAllAsync()));
-fileGroup.MapGet("/{id:int}", async (IFileRepository fileRepo, int id) =>
+fileGroup.MapGet("/exist/{fileName}", async (IFileRepository fileRepo, string fileName) =>
+{
+    var exists = await fileRepo.ExistsAsync(fileName);
+    return Results.Ok(exists);
+});
+fileGroup.MapGet("/", async (IFileRepository fileRepo, AppMapper mapper) =>
+{
+    var files = await fileRepo.GetAllAsync();
+    var fileDtos = files.Select(f => mapper.ImportedFileToDto(f));
+    return Results.Ok(fileDtos);
+});
+fileGroup.MapGet("/{id:int}", async (IFileRepository fileRepo, AppMapper mapper, int id) =>
 {
     var file = await fileRepo.GetByIdAsync(id);
-    return file != null ? Results.Ok(file) : Results.NotFound();
+    return file != null ? Results.Ok(mapper.ImportedFileToDto(file)) : Results.NotFound();
 });
-fileGroup.MapPost("/", async (IFileRepository fileRepo, ImportedFile file) =>
+fileGroup.MapPost("/", async (IFileRepository fileRepo, AppMapper mapper, CreateImportedFileDto createDto) =>
 {
+    var file = mapper.DtoToImportedFile(createDto);
     try
     {
         var createdFile = await fileRepo.CreateAsync(file);
-        return Results.Created($"/files/{createdFile.Id}", createdFile);
+        var fileDto = mapper.ImportedFileToDto(createdFile);
+        return Results.Created($"/files/{createdFile.Id}", fileDto);
     }
     catch (InvalidOperationException ex)
     {
