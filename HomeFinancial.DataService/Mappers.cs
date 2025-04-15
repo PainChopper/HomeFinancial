@@ -1,6 +1,7 @@
-﻿// Mappers.cs
-using HomeFinancial.DTOs;
+// Mappers.cs
+
 using HomeFinancial.Data.Models;
+using HomeFinancial.DataService.DTO;
 using Riok.Mapperly.Abstractions;
 
 namespace HomeFinancial.Mapping

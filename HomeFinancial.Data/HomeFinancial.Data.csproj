@@ -18,4 +18,8 @@
       <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="9.0.3" />
     </ItemGroup>
 
+    <ItemGroup>
+      <ProjectReference Include="..\HomeFinancial.Domain\HomeFinancial.Domain.csproj" />
+    </ItemGroup>
+
 </Project>

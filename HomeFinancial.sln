@@ -1,5 +1,6 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
+# 
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HomeFinancial.Data", "HomeFinancial.Data\HomeFinancial.Data.csproj", "{7F49BE82-FA86-4616-901E-23603BC33B17}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HomeFinancial.DataService", "HomeFinancial.DataService\HomeFinancial.DataService.csproj", "{E3C3A94E-2D38-4C4B-9D6A-F5217F59D7CE}"
@@ -9,6 +10,8 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HomeFinancial.OfxParser.Tets", "HomeFinancial.OfxParser.Tets\HomeFinancial.OfxParser.Tets.csproj", "{48384C8C-E755-4A19-B8E2-14E57A8A859C}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HomeFinancial.Repository", "HomeFinancial.Repository\HomeFinancial.Repository.csproj", "{AA97D79C-C516-432F-8329-B1238E448C9D}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HomeFinancial.Domain", "HomeFinancial.Domain\HomeFinancial.Domain.csproj", "{375C2DC2-9F84-4FC6-86CC-E1CBAF3FE5BB}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -36,5 +39,9 @@ Global
 		{AA97D79C-C516-432F-8329-B1238E448C9D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{AA97D79C-C516-432F-8329-B1238E448C9D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{AA97D79C-C516-432F-8329-B1238E448C9D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{375C2DC2-9F84-4FC6-86CC-E1CBAF3FE5BB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{375C2DC2-9F84-4FC6-86CC-E1CBAF3FE5BB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{375C2DC2-9F84-4FC6-86CC-E1CBAF3FE5BB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{375C2DC2-9F84-4FC6-86CC-E1CBAF3FE5BB}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

@@ -33,6 +33,7 @@
       <ProjectReference Include="..\HomeFinancial.Data\HomeFinancial.Data.csproj" />
       <ProjectReference Include="..\HomeFinancial.OfxParser\HomeFinancial.OfxParser.csproj" />
       <ProjectReference Include="..\HomeFinancial.Repository\HomeFinancial.Repository.csproj" />
+      <ProjectReference Include="..\HomeFinancial.Domain\HomeFinancial.Domain.csproj" />
     </ItemGroup>
 
 </Project>

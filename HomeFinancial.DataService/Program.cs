@@ -1,11 +1,12 @@
 // Program.cs
 using HomeFinancial.Repository;
-using HomeFinancial.DTOs;
 using HomeFinancial.Mapping;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
 using Microsoft.AspNetCore.Diagnostics;
 using System.Text.Json;
+using HomeFinancial.Data;
+using HomeFinancial.DataService.Endpoints;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -99,95 +100,9 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-// Grouped Routes for Categories
-var categoryGroup = app.MapGroup("/categories");
-categoryGroup.MapGet("/", async (ICategoryRepository categoryRepo, AppMapper mapper) =>
-{
-    var categories = await categoryRepo.GetAllAsync();
-    var categoryDtos = categories.Select(c => mapper.CategoryToDto(c));
-    return Results.Ok(categoryDtos);
-});
-categoryGroup.MapGet("/{id:int}", async (ICategoryRepository categoryRepo, AppMapper mapper, int id) =>
-{
-    var category = await categoryRepo.GetByIdAsync(id);
-    return category != null ? Results.Ok(mapper.CategoryToDto(category)) : Results.NotFound();
-});
-categoryGroup.MapPost("/", async (ICategoryRepository categoryRepo, AppMapper mapper, CreateCategoryDto createDto) =>
-{
-    var category = mapper.DtoToCategory(createDto);
-    try
-    {
-        var createdCategory = await categoryRepo.CreateAsync(category);
-        var categoryDto = mapper.CategoryToDto(createdCategory);
-        return Results.Created($"/categories/{createdCategory.Id}", categoryDto);
-    }
-    catch (InvalidOperationException ex)
-    {
-        return Results.Conflict(ex.Message);
-    }
-});
-
-// Grouped Routes for Transactions
-var transactionGroup = app.MapGroup("/transactions");
-transactionGroup.MapGet("/", async (ITransactionRepository transactionRepo, AppMapper mapper) =>
-{
-    var transactions = await transactionRepo.GetAllAsync();
-    var transactionDtos = transactions.Select(tx => mapper.BankTransactionToDto(tx));
-    return Results.Ok(transactionDtos);
-});
-transactionGroup.MapGet("/{id:int}", async (ITransactionRepository transactionRepo, AppMapper mapper, int id) =>
-{
-    var transaction = await transactionRepo.GetByIdAsync(id);
-    return transaction != null ? Results.Ok(mapper.BankTransactionToDto(transaction)) : Results.NotFound();
-});
-transactionGroup.MapPost("/", async (ITransactionRepository transactionRepo, ICategoryRepository categoryRepo, AppMapper mapper, CreateBankTransactionDto createDto) =>
-{
-    var category = await categoryRepo.GetOrCreateAsync(createDto.CategoryName);
-    var transaction = mapper.DtoToBankTransaction(createDto, category.Id);
-
-    try
-    {
-        var createdTransaction = await transactionRepo.CreateAsync(transaction);
-        var transactionDto = mapper.BankTransactionToDto(createdTransaction);
-        return Results.Created($"/transactions/{createdTransaction.Id}", transactionDto);
-    }
-    catch (InvalidOperationException ex)
-    {
-        return Results.Conflict(ex.Message);
-    }
-});
-
-// Grouped Routes for Files
-var fileGroup = app.MapGroup("/files");
-fileGroup.MapGet("/exist/{fileName}", async (IFileRepository fileRepo, string fileName) =>
-{
-    var exists = await fileRepo.ExistsAsync(fileName);
-    return Results.Ok(exists);
-});
-fileGroup.MapGet("/", async (IFileRepository fileRepo, AppMapper mapper) =>
-{
-    var files = await fileRepo.GetAllAsync();
-    var fileDtos = files.Select(f => mapper.ImportedFileToDto(f));
-    return Results.Ok(fileDtos);
-});
-fileGroup.MapGet("/{id:int}", async (IFileRepository fileRepo, AppMapper mapper, int id) =>
-{
-    var file = await fileRepo.GetByIdAsync(id);
-    return file != null ? Results.Ok(mapper.ImportedFileToDto(file)) : Results.NotFound();
-});
-fileGroup.MapPost("/", async (IFileRepository fileRepo, AppMapper mapper, CreateImportedFileDto createDto) =>
-{
-    var file = mapper.DtoToImportedFile(createDto);
-    try
-    {
-        var createdFile = await fileRepo.CreateAsync(file);
-        var fileDto = mapper.ImportedFileToDto(createdFile);
-        return Results.Created($"/files/{createdFile.Id}", fileDto);
-    }
-    catch (InvalidOperationException ex)
-    {
-        return Results.Conflict(ex.Message);
-    }
-});
+// Map endpoints from separate files
+app.MapCategoryEndpoints();
+app.MapTransactionEndpoints();
+app.MapFileEndpoints();
 
 app.Run();

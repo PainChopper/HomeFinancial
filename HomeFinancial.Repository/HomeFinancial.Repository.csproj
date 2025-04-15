@@ -8,6 +8,7 @@
 
     <ItemGroup>
       <ProjectReference Include="..\HomeFinancial.Data\HomeFinancial.Data.csproj" />
+      <ProjectReference Include="..\HomeFinancial.Domain\HomeFinancial.Domain.csproj" />
     </ItemGroup>
 
 </Project>
