@@ -1,5 +1,14 @@
-﻿### GET request to example server
-GET https://examples.http-client.intellij.net/get
-    ?generated-in=JetBrains Rider
+﻿###
+POST http://localhost:5032/api/Files/import
+Content-Type: multipart/form-data; boundary=MyBoundary
 
-###
+--MyBoundary
+Content-Disposition: form-data; name="file"; filename="1.ofx"
+Content-Type: application/octet-stream
+
+< ./1.ofx
+--MyBoundary
+Content-Disposition: form-data; name="fileName"
+
+тестовый_файл
+--MyBoundary--

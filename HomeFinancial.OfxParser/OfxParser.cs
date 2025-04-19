@@ -21,13 +21,13 @@ public class OfxParser : IOfxParser
     }
 
     /// <summary>
-    /// Читает OFX-файл и возвращает список транзакций.
+    /// Читает OFX-файл из потока и возвращает список транзакций.
     /// </summary>
-    /// <param name="filePath">Путь к файлу</param>
+    /// <param name="stream">Поток OFX-файла</param>
     /// <returns>Список транзакций</returns>
-    public List<OfxTransaction> ParseOfxFile(string filePath)
+    public List<OfxTransaction> ParseOfxFile(Stream stream)
     {
-        _logger.LogInformation("Начало разбора OFX файла: {FilePath}", filePath);
+        _logger.LogInformation("Начало разбора OFX файла из потока.");
 
         // Загрузка документа
         // Важно: если OFX содержит отдельные куски "<?xml?>", это иногда может нарушить работу XDocument.
@@ -36,7 +36,7 @@ public class OfxParser : IOfxParser
         XDocument xdoc;
         try
         {
-            xdoc = XDocument.Load(filePath);
+            xdoc = XDocument.Load(stream);
             _logger.LogInformation("Документ OFX успешно загружен.");
         }
         catch (Exception ex)

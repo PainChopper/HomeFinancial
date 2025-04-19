@@ -1,5 +1,4 @@
-using HomeFinancial.Application.DTOs;
-using HomeFinancial.Application.Interfaces;
+using HomeFinancial.Application.UseCases.ImportOfxFile;
 using Microsoft.AspNetCore.Mvc;
 
 namespace HomeFinancial.WebApi.Controllers;
@@ -9,16 +8,24 @@ namespace HomeFinancial.WebApi.Controllers;
 /// </summary>
 [ApiController]
 [Route("api/[controller]")]
-public class FilesController(IFileImportService fileImportService) : ControllerBase
+public class FilesController : ControllerBase
 {
+    private readonly IImportOfxFileHandler _importHandler;
+
+    public FilesController(IImportOfxFileHandler importHandler)
+    {
+        _importHandler = importHandler ?? throw new ArgumentNullException(nameof(importHandler));
+    }
+
     /// <summary>
     /// Импорт банковского файла (multipart/form-data)
     /// </summary>
     /// <param name="form">Форма импорта файла</param>
+    /// <param name="cancellationToken">Токен отмены операции</param>
     /// <returns>Результат импорта</returns>
     [HttpPost("import")]
     [Consumes("multipart/form-data")]
-    public async Task<IActionResult> ImportFile([FromForm] ImportFileForm form)
+    public async Task<IActionResult> ImportFile([FromForm] ImportFileForm form, CancellationToken cancellationToken)
     {
         if (form.File == null)
         {
@@ -26,13 +33,14 @@ public class FilesController(IFileImportService fileImportService) : ControllerB
         }
 
         await using var stream = form.File.OpenReadStream();
+        var command = new ImportOfxFileCommand(form.FileName, stream);
         try
         {
-            await fileImportService.ImportAsync(form.FileName, stream);
+            await _importHandler.HandleAsync(command, cancellationToken);
         }
-        catch (Exception ex) when (ex.Message.Contains("already exists"))
+        catch (Exception ex)
         {
-            return BadRequest("Файл с таким именем уже был импортирован ранее.");
+            return BadRequest($"Ошибка при импорте файла: {ex.Message}");
         }
         return Ok("Файл успешно импортирован.");
     }
@@ -46,9 +54,7 @@ public class FilesController(IFileImportService fileImportService) : ControllerB
     [HttpGet("files")]
     public IActionResult GetFiles([FromQuery] int? cursor = null, [FromQuery] int limit = 20)
     {
-        // TODO: Реализовать получение списка файлов через сервис Application слоя
-        // Пример: var result = await _importService.GetFilesAsync(cursor, limit);
-        // return Ok(result);
-        return Ok(new { Files = new List<ImportedFileDto>(), NextCursor = (int?)null });
+        // TODO: Реализовать получение списка файлов через Application-слой
+        return Ok(new { Files = new List<object>(), NextCursor = (int?)null });
     }
 }

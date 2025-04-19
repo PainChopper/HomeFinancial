@@ -36,4 +36,10 @@
       <ProjectReference Include="..\HomeFinancial.Application\HomeFinancial.Application.csproj" />
     </ItemGroup>
 
+    <ItemGroup>
+      <None Update="SandBox\1.ofx">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </None>
+    </ItemGroup>
+
 </Project>

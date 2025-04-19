@@ -1,4 +1,4 @@
-﻿namespace HomeFinancial.OfxParser;
+namespace HomeFinancial.OfxParser;
 
 /// <summary>
 /// Интерфейс парсера OFX-файлов
@@ -6,9 +6,9 @@
 public interface IOfxParser
 {
     /// <summary>
-    /// Читает OFX-файл и возвращает список транзакций.
+    /// Читает OFX-файл из потока и возвращает список транзакций.
     /// </summary>
-    /// <param name="filePath">Путь к файлу</param>
+    /// <param name="stream">Поток OFX-файла</param>
     /// <returns>Список транзакций</returns>
-    List<OfxTransaction> ParseOfxFile(string filePath);
+    List<OfxTransaction> ParseOfxFile(Stream stream);
 }
