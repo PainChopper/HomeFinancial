@@ -8,11 +8,9 @@ namespace HomeFinancial.Infrastructure.Implementations;
 /// <summary>
 /// Репозиторий для работы с импортированными файлами
 /// </summary>
-public class FileRepository : GenericGenericRepository<ImportedFile>, IFileRepository
+public class FileRepository(HomeFinancialDbContext dbContext, ILogger<GenericGenericRepository<ImportedFile>> logger)
+    : GenericGenericRepository<ImportedFile>(dbContext, logger), IFileRepository
 {
-    public FileRepository(HomeFinancialDbContext dbContext, ILogger<GenericGenericRepository<ImportedFile>> logger)
-        : base(dbContext, logger) { }
-
     /// <summary>
     /// Проверяет, существует ли файл с указанным именем в базе данных
     /// </summary>

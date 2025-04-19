@@ -8,13 +8,9 @@ namespace HomeFinancial.Infrastructure.Implementations;
 /// <summary>
 /// Репозиторий для работы с категориями
 /// </summary>
-public class CategoryRepository : GenericGenericRepository<Category>, ICategoryRepository
+public class CategoryRepository(HomeFinancialDbContext dbContext, ILogger<GenericGenericRepository<Category>> logger)
+    : GenericGenericRepository<Category>(dbContext, logger), ICategoryRepository
 {
-    public CategoryRepository(HomeFinancialDbContext dbContext, ILogger<GenericGenericRepository<Category>> logger)
-        : base(dbContext, logger)
-    {
-    }
-
     /// <summary>
     /// Получает категорию по имени
     /// </summary>

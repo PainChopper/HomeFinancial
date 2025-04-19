@@ -8,11 +8,11 @@ namespace HomeFinancial.Infrastructure.Implementations;
 /// <summary>
 /// Репозиторий для работы с банковскими транзакциями
 /// </summary>
-public class TransactionRepository : GenericGenericRepository<BankTransaction>, ITransactionRepository
+public class TransactionRepository(
+    HomeFinancialDbContext dbContext,
+    ILogger<GenericGenericRepository<BankTransaction>> logger)
+    : GenericGenericRepository<BankTransaction>(dbContext, logger), ITransactionRepository
 {
-    public TransactionRepository(HomeFinancialDbContext dbContext, ILogger<GenericGenericRepository<BankTransaction>> logger)
-        : base(dbContext, logger) { }
-
     /// <summary>
     /// Создает новую банковскую транзакцию
     /// </summary>

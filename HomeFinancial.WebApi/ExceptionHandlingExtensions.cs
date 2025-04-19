@@ -1,6 +1,4 @@
-using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Diagnostics;
-using Microsoft.Extensions.Logging;
 using System.Text.Json;
 
 namespace HomeFinancial.WebApi;
@@ -25,11 +23,11 @@ public static class ExceptionHandlingExtensions
                 var contextFeature = context.Features.Get<IExceptionHandlerFeature>();
                 if (contextFeature != null)
                 {
-                    logger.LogError(contextFeature.Error, "An unhandled exception occurred.");
+                    logger.LogError(contextFeature.Error, "Произошла необработанная ошибка.");
                     var errorResponse = new
                     {
                         context.Response.StatusCode,
-                        Message = "Internal Server Error."
+                        Message = "Внутренняя ошибка сервера."
                     };
                     await context.Response.WriteAsync(JsonSerializer.Serialize(errorResponse));
                 }

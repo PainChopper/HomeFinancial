@@ -1,4 +1,4 @@
-﻿using System.Globalization;
+using System.Globalization;
 using System.Xml.Linq;
 using Microsoft.Extensions.Logging;
 
@@ -24,7 +24,7 @@ public class OfxParser
     /// <returns>List of OfxTransaction</returns>
     public List<OfxTransaction> ParseOfxFile(string filePath)
     {
-        _logger.LogInformation("Starting to parse OFX file: {FilePath}", filePath);
+        _logger.LogInformation("Начало разбора OFX файла: {FilePath}", filePath);
 
         // Load the document
         // Important: If the OFX contains separate "<?xml?>" chunks, they can sometimes break XDocument.
@@ -34,11 +34,11 @@ public class OfxParser
         try
         {
             xdoc = XDocument.Load(filePath);
-            _logger.LogInformation("OFX document loaded successfully.");
+            _logger.LogInformation("Документ OFX успешно загружен.");
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error loading OFX document: {ErrorMessage}", ex.Message);
+            _logger.LogError(ex, "Ошибка при загрузке OFX документа: {ErrorMessage}", ex.Message);
             throw;
         }
 
@@ -46,7 +46,7 @@ public class OfxParser
         // Descendants("STMTTRN") retrieves all elements named STMTTRN at any level of nesting
         var stmtTrnElements = xdoc.Descendants("STMTTRN");
         int transactionCount = stmtTrnElements.Count();
-        _logger.LogInformation("Found {Count} transaction elements.", transactionCount);
+        _logger.LogInformation("Найдено элементов транзакций: {Count}.", transactionCount);
 
         var transactions = new List<OfxTransaction>();
 
@@ -59,7 +59,7 @@ public class OfxParser
             var nameValue = element.Element("NAME")?.Value;
             var trnAmtValue = element.Element("TRNAMT")?.Value;
 
-            _logger.LogDebug("Parsing transaction FITID: {FitId}", fitIdValue);
+            _logger.LogDebug("Обрабатывается транзакция FITID: {FitId}", fitIdValue);
 
             // Parse the date
             // Format is approximately "20250113224820.000[+3:MSK]".
@@ -81,7 +81,7 @@ public class OfxParser
                         "yyyyMMddHHmmss.fff",
                         CultureInfo.InvariantCulture
                     );
-                    _logger.LogDebug("Parsed date with milliseconds: {ParsedDate}", parsedDate);
+                    _logger.LogDebug("Дата с миллисекундами разобрана: {ParsedDate}", parsedDate);
                 }
                 catch (FormatException)
                 {
@@ -93,19 +93,19 @@ public class OfxParser
                             "yyyyMMddHHmmss",
                             CultureInfo.InvariantCulture
                         );
-                        _logger.LogDebug("Parsed date without milliseconds: {ParsedDate}", parsedDate);
+                        _logger.LogDebug("Дата без миллисекунд разобрана: {ParsedDate}", parsedDate);
                     }
                     catch (FormatException ex)
                     {
                         // If still failing, log the issue
-                        _logger.LogWarning("Failed to parse date '{DtPostedRaw}': {ErrorMessage}", dtPostedRaw, ex.Message);
+                        _logger.LogWarning("Не удалось разобрать дату '{DtPostedRaw}': {ErrorMessage}", dtPostedRaw, ex.Message);
                         // Optionally, you can choose to continue or throw an exception
                     }
                 }
             }
             else
             {
-                _logger.LogWarning("DTPOSTED value is null or empty for FITID: {FitId}", fitIdValue);
+                _logger.LogWarning("Значение DTPOSTED отсутствует или пустое для FITID: {FitId}", fitIdValue);
             }
 
             // Parse the amount
@@ -113,11 +113,11 @@ public class OfxParser
             if (decimal.TryParse(trnAmtValue, NumberStyles.Any, CultureInfo.InvariantCulture, out var amt))
             {
                 parsedAmount = amt;
-                _logger.LogDebug("Parsed amount: {Amount}", parsedAmount);
+                _logger.LogDebug("Сумма разобрана: {Amount}", parsedAmount);
             }
             else
             {
-                _logger.LogWarning("Failed to parse amount: {TrnAmtValue} for FITID: {FitId}", trnAmtValue, fitIdValue);
+                _logger.LogWarning("Не удалось разобрать сумму: {TrnAmtValue} для FITID: {FitId}", trnAmtValue, fitIdValue);
             }
 
             // Create DTO and add to the list
@@ -131,10 +131,10 @@ public class OfxParser
             };
 
             transactions.Add(transaction);
-            _logger.LogDebug("Added transaction ID: {TranId}", transaction.TranId);
+            _logger.LogDebug("Добавлена транзакция с ID: {TranId}", transaction.TranId);
         }
 
-        _logger.LogInformation("Finished parsing OFX file. Total transactions parsed: {Count}", transactions.Count);
+        _logger.LogInformation("Разбор OFX файла завершен. Всего транзакций обработано: {Count}.", transactions.Count);
         return transactions;
     }
 }

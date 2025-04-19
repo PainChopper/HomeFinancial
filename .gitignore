@@ -29,6 +29,8 @@ artifacts/
 
 # Logs
 *.log
+*.txt
+
 
 # OS generated
 .DS_Store

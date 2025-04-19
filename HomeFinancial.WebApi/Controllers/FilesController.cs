@@ -20,9 +20,21 @@ public class FilesController(IFileImportService fileImportService) : ControllerB
     [Consumes("multipart/form-data")]
     public async Task<IActionResult> ImportFile([FromForm] ImportFileForm form)
     {
+        if (form.File == null)
+        {
+            return BadRequest("Файл не был выбран для загрузки.");
+        }
+
         await using var stream = form.File.OpenReadStream();
-        await fileImportService.ImportAsync(form.FileName, stream);
-        return Ok($"Файл '{form.FileName}' успешно импортирован");
+        try
+        {
+            await fileImportService.ImportAsync(form.FileName, stream);
+        }
+        catch (Exception ex) when (ex.Message.Contains("already exists"))
+        {
+            return BadRequest("Файл с таким именем уже был импортирован ранее.");
+        }
+        return Ok("Файл успешно импортирован.");
     }
 
     /// <summary>
