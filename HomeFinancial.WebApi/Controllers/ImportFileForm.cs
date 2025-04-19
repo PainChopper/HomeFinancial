@@ -8,9 +8,9 @@ namespace HomeFinancial.WebApi.Controllers
     public class ImportFileForm
     {
         [FromForm(Name = "file")]
-        public required IFormFile File { get; set; }
+        public required IFormFile File { get; init; }
 
         [FromForm(Name = "fileName")]
-        public required string FileName { get; set; }
+        public required string FileName { get; init; }
     }
 }

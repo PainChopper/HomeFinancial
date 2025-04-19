@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Diagnostics;
 using System.Text.Json;
+using Microsoft.Extensions.Logging;
 
 namespace HomeFinancial.WebApi;
 
@@ -11,8 +12,9 @@ public static class ExceptionHandlingExtensions
     /// <summary>
     /// Включает глобальный обработчик ошибок с логированием и JSON-ответом
     /// </summary>
-    public static IApplicationBuilder UseGlobalExceptionHandler(this IApplicationBuilder app, ILogger logger)
+    public static IApplicationBuilder UseGlobalExceptionHandler(this IApplicationBuilder app)
     {
+        var logger = app.ApplicationServices.GetRequiredService<ILogger<Program>>();
         app.UseExceptionHandler(errorApp =>
         {
             errorApp.Run(async context =>

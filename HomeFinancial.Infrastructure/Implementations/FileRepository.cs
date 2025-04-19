@@ -8,7 +8,7 @@ namespace HomeFinancial.Infrastructure.Implementations;
 /// <summary>
 /// Репозиторий для работы с импортированными файлами
 /// </summary>
-public class FileRepository(HomeFinancialDbContext dbContext, ILogger<GenericGenericRepository<ImportedFile>> logger)
+public class FileRepository(HomeFinancialDbContext dbContext, ILogger<FileRepository> logger)
     : GenericGenericRepository<ImportedFile>(dbContext, logger), IFileRepository
 {
     /// <summary>

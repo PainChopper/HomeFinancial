@@ -24,14 +24,14 @@ builder.Host.UseSerilog()
 
 var app = builder.Build();
 
-// Получаем логгер приложения
-var logger = app.Services.GetRequiredService<ILogger<Program>>();
-
 // Глобальный обработчик ошибок
-app.UseGlobalExceptionHandler(logger);
+app.UseGlobalExceptionHandler();
 
 // Проверка соединения с базой данных
-app.Services.CheckDatabaseConnection(logger);
+if (!app.Services.CheckDatabaseConnection())
+{
+    Environment.Exit(1);
+}
 
 // Включаем Swagger только в режиме разработки
 if (app.Environment.IsDevelopment())
