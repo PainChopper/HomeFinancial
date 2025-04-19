@@ -4,32 +4,35 @@ using Microsoft.Extensions.Logging;
 
 namespace HomeFinancial.OfxParser;
 
-public class OfxParser
+/// <summary>
+/// Реализация парсера OFX-файлов
+/// </summary>
+public class OfxParser : IOfxParser
 {
     private readonly ILogger<OfxParser> _logger;
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="OfxParser"/> class.
+    /// Создаёт экземпляр <see cref="OfxParser"/>.
     /// </summary>
-    /// <param name="logger">The logger instance.</param>
+    /// <param name="logger">Экземпляр логгера.</param>
     public OfxParser(ILogger<OfxParser> logger)
     {
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
     /// <summary>
-    /// Reads an OFX file and returns a list of transactions.
+    /// Читает OFX-файл и возвращает список транзакций.
     /// </summary>
-    /// <param name="filePath">Path to the file</param>
-    /// <returns>List of OfxTransaction</returns>
+    /// <param name="filePath">Путь к файлу</param>
+    /// <returns>Список транзакций</returns>
     public List<OfxTransaction> ParseOfxFile(string filePath)
     {
         _logger.LogInformation("Начало разбора OFX файла: {FilePath}", filePath);
 
-        // Load the document
-        // Important: If the OFX contains separate "<?xml?>" chunks, they can sometimes break XDocument.
-        // Usually, loading the file directly (XDocument.Load) is sufficient.
-        // If there's a problem with headers, they can be manually removed beforehand.
+        // Загрузка документа
+        // Важно: если OFX содержит отдельные куски "<?xml?>", это иногда может нарушить работу XDocument.
+        // Обычно достаточно загрузить файл напрямую (XDocument.Load).
+        // Если есть проблемы с заголовками, их можно удалить вручную заранее.
         XDocument xdoc;
         try
         {
@@ -42,8 +45,7 @@ public class OfxParser
             throw;
         }
 
-        // Find all <STMTTRN> nodes
-        // Descendants("STMTTRN") retrieves all elements named STMTTRN at any level of nesting
+        // Получаем все элементы транзакций
         var stmtTrnElements = xdoc.Descendants("STMTTRN");
         int transactionCount = stmtTrnElements.Count();
         _logger.LogInformation("Найдено элементов транзакций: {Count}.", transactionCount);
@@ -52,7 +54,6 @@ public class OfxParser
 
         foreach (var element in stmtTrnElements)
         {
-            // Read fields from XML
             var fitIdValue = element.Element("FITID")?.Value;
             var dtPostedRaw = element.Element("DTPOSTED")?.Value;
             var memoValue = element.Element("MEMO")?.Value;
@@ -61,23 +62,15 @@ public class OfxParser
 
             _logger.LogDebug("Обрабатывается транзакция FITID: {FitId}", fitIdValue);
 
-            // Parse the date
-            // Format is approximately "20250113224820.000[+3:MSK]".
-            // We need to discard everything after the dot or before the square brackets.
-            // For example:
-            //   "20250113224820.000[+3:MSK]" -> "20250113224820.000"
-            // Then use DateTime.ParseExact with the format "yyyyMMddHHmmss.fff".
-            DateTime parsedDate = DateTime.MinValue;
-            if (!string.IsNullOrEmpty(dtPostedRaw))
+            // Разбор даты
+            // Формат примерно "20250113224820.000[+3:MSK]".
+            DateTime parsedDate = default;
+            if (!string.IsNullOrWhiteSpace(dtPostedRaw))
             {
-                // Split at the first '[' if it exists
-                var split = dtPostedRaw.Split('[');
-                var datePart = split[0]; // "20250113224820.000"
-
                 try
                 {
                     parsedDate = DateTime.ParseExact(
-                        datePart,
+                        dtPostedRaw.Substring(0, 17),
                         "yyyyMMddHHmmss.fff",
                         CultureInfo.InvariantCulture
                     );
@@ -85,11 +78,10 @@ public class OfxParser
                 }
                 catch (FormatException)
                 {
-                    // If parsing with milliseconds fails, try without milliseconds
                     try
                     {
                         parsedDate = DateTime.ParseExact(
-                            datePart,
+                            dtPostedRaw.Substring(0, 14),
                             "yyyyMMddHHmmss",
                             CultureInfo.InvariantCulture
                         );
@@ -97,9 +89,8 @@ public class OfxParser
                     }
                     catch (FormatException ex)
                     {
-                        // If still failing, log the issue
                         _logger.LogWarning("Не удалось разобрать дату '{DtPostedRaw}': {ErrorMessage}", dtPostedRaw, ex.Message);
-                        // Optionally, you can choose to continue or throw an exception
+                        // Можно продолжить или выбросить исключение
                     }
                 }
             }
@@ -108,7 +99,7 @@ public class OfxParser
                 _logger.LogWarning("Значение DTPOSTED отсутствует или пустое для FITID: {FitId}", fitIdValue);
             }
 
-            // Parse the amount
+            // Разбор суммы
             decimal parsedAmount = 0;
             if (decimal.TryParse(trnAmtValue, NumberStyles.Any, CultureInfo.InvariantCulture, out var amt))
             {
@@ -120,15 +111,14 @@ public class OfxParser
                 _logger.LogWarning("Не удалось разобрать сумму: {TrnAmtValue} для FITID: {FitId}", trnAmtValue, fitIdValue);
             }
 
-            // Create DTO and add to the list
-            var transaction = new OfxTransaction
-            {
-                TranId = fitIdValue,
-                TranDate = parsedDate,
-                Category = memoValue,
-                Description = nameValue,
-                Amount = parsedAmount
-            };
+            // Создаём DTO и добавляем в список
+            var transaction = new OfxTransaction(
+                fitIdValue ?? string.Empty,
+                parsedDate,
+                memoValue ?? string.Empty,
+                nameValue ?? string.Empty,
+                parsedAmount
+            );
 
             transactions.Add(transaction);
             _logger.LogDebug("Добавлена транзакция с ID: {TranId}", transaction.TranId);
@@ -137,14 +127,4 @@ public class OfxParser
         _logger.LogInformation("Разбор OFX файла завершен. Всего транзакций обработано: {Count}.", transactions.Count);
         return transactions;
     }
-}
-
-// Assuming the OfxTransaction class is defined as follows:
-public class OfxTransaction
-{
-    public string TranId { get; set; }
-    public DateTime TranDate { get; set; }
-    public string Category { get; set; }
-    public string Description { get; set; }
-    public decimal Amount { get; set; }
 }

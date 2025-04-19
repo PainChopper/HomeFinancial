@@ -1,6 +1,6 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# 
+#
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HomeFinancial.Infrastructure", "HomeFinancial.Infrastructure\HomeFinancial.Infrastructure.csproj", "{7F49BE82-FA86-4616-901E-23603BC33B17}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HomeFinancial.WebApi", "HomeFinancial.WebApi\HomeFinancial.WebApi.csproj", "{E3C3A94E-2D38-4C4B-9D6A-F5217F59D7CE}"
