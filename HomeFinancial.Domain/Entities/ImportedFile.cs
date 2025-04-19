@@ -8,24 +8,24 @@ namespace HomeFinancial.Domain.Entities;
 public class ImportedFile : Entity
 {
     /// <summary>
+    /// Идентификатор
+    /// </summary>
+    public int Id { get; set; }
+
+    /// <summary>
     /// Имя файла
     /// </summary>
-    public string FileName { get; private set; } = null!;
+    public string FileName { get; set; } = null!;
 
     /// <summary>
     /// Дата и время импорта файла
     /// </summary>
-    public DateTime ImportedAt { get; private set; }
+    public DateTime ImportedAt { get; set; }
 
-    // Конструктор для EF Core
-    protected ImportedFile()
-    {
-    }
+    // Публичный конструктор для EF Core и маппинга
+    public ImportedFile() { }
 
-    /// <summary>
-    /// Создает новую запись об импортированном файле
-    /// </summary>
-    /// <param name="fileName">Имя файла</param>
+    // Конструктор для создания новой записи об импортированном файле
     public ImportedFile(string fileName)
     {
         if (string.IsNullOrWhiteSpace(fileName))
@@ -33,5 +33,13 @@ public class ImportedFile : Entity
 
         FileName = fileName;
         ImportedAt = DateTime.UtcNow;
+    }
+
+    // Публичный конструктор с параметрами для поддержки маппинга Mapperly
+    public ImportedFile(int id, string fileName, DateTime importedAt)
+    {
+        Id = id;
+        FileName = fileName;
+        ImportedAt = importedAt;
     }
 }

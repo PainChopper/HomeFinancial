@@ -1,0 +1,22 @@
+namespace HomeFinancial.WebApi;
+
+/// <summary>
+/// Методы расширения для сервисов WebApi (Swagger и др.)
+/// </summary>
+public static class ServiceCollectionExtensions
+{
+    /// <summary>
+    /// Регистрирует Swagger с поддержкой xml-комментариев контроллеров
+    /// </summary>
+    public static IServiceCollection AddSwaggerWithXmlDocs(this IServiceCollection services)
+    {
+        services.AddEndpointsApiExplorer();
+        services.AddSwaggerGen(options =>
+        {
+            var xmlFile = $"{System.Reflection.Assembly.GetExecutingAssembly().GetName().Name}.xml";
+            var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
+            options.IncludeXmlComments(xmlPath, includeControllerXmlComments: true);
+        });
+        return services;
+    }
+}

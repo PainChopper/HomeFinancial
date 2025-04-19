@@ -7,22 +7,18 @@ namespace HomeFinancial.Domain.Entities;
 /// </summary>
 public class Category : Entity
 {
-    private readonly List<BankTransaction> _transactions = new();
-
     /// <summary>
     /// Название категории
     /// </summary>
-    public string Name { get; private set; } = null!;
+    public string Name { get; set; } = null!;
 
     /// <summary>
     /// Транзакции, относящиеся к данной категории
     /// </summary>
-    public IReadOnlyCollection<BankTransaction> Transactions => _transactions.AsReadOnly();
+    public ICollection<BankTransaction> Transactions { get; set; } = new List<BankTransaction>();
 
-    // Конструктор для EF Core
-    protected Category()
-    {
-    }
+    // Публичный конструктор для EF Core и маппинга
+    public Category() { }
 
     /// <summary>
     /// Создает новую категорию с указанным названием
@@ -54,6 +50,17 @@ public class Category : Entity
     /// <param name="transaction">Транзакция для добавления</param>
     public void AddTransaction(BankTransaction transaction)
     {
-        _transactions.Add(transaction);
+        Transactions.Add(transaction);
+    }
+
+    /// <summary>
+    /// Создает новую категорию с указанным идентификатором и названием
+    /// </summary>
+    /// <param name="id">Идентификатор категории</param>
+    /// <param name="name">Название категории</param>
+    public Category(int id, string name)
+    {
+        Id = id;
+        Name = name;
     }
 }

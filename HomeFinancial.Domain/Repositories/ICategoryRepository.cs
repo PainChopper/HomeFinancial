@@ -5,7 +5,7 @@ namespace HomeFinancial.Domain.Repositories;
 /// <summary>
 /// Интерфейс репозитория для работы с категориями
 /// </summary>
-public interface ICategoryRepository : IRepository<Category>
+public interface ICategoryRepository : IGenericRepository<Category>
 {
     /// <summary>
     /// Получает категорию по имени
@@ -18,6 +18,9 @@ public interface ICategoryRepository : IRepository<Category>
     /// Получает существующую категорию по имени или создает новую
     /// </summary>
     /// <param name="name">Имя категории</param>
+    /// <param name="cancellationToken"></param>
     /// <returns>Существующая или новая категория</returns>
-    Task<Category> GetOrCreateAsync(string name);
+    Task<Category> GetOrCreateAsync(string name, CancellationToken cancellationToken);
+
+    Task DeleteAsync(Category category, CancellationToken cancellationToken);
 }
