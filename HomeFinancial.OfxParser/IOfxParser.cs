@@ -6,9 +6,9 @@ namespace HomeFinancial.OfxParser;
 public interface IOfxParser
 {
     /// <summary>
-    /// Читает OFX-файл из потока и возвращает список транзакций.
+    /// Читает OFX-файл из потока и возвращает перечисление транзакций.
     /// </summary>
     /// <param name="stream">Поток OFX-файла</param>
-    /// <returns>Список транзакций</returns>
-    List<OfxTransaction> ParseOfxFile(Stream stream);
+    /// <returns>Перечисление транзакций</returns>
+    IEnumerable<OfxTransaction> ParseOfxFile(Stream stream);
 }

@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Xml.Linq;
 using Microsoft.Extensions.Logging;
+using System.Xml;
 
 namespace HomeFinancial.OfxParser;
 
@@ -17,76 +18,59 @@ public class OfxParser : IOfxParser
     }
 
     /// <summary>
-    /// Читает OFX-файл из потока и возвращает список транзакций.
+    /// Читает OFX-файл из потока и возвращает перечисление транзакций.
     /// </summary>
     /// <param name="stream">Поток OFX-файла</param>
-    /// <returns>Список транзакций</returns>
-    public List<OfxTransaction> ParseOfxFile(Stream stream)
+    /// <returns>Перечисление транзакций</returns>
+    public IEnumerable<OfxTransaction> ParseOfxFile(Stream stream)
     {
-        _logger.LogInformation("Начало разбора OFX файла из потока.");
+        using var reader = XmlReader.Create(stream, new XmlReaderSettings { IgnoreWhitespace = true });
 
-        // Загрузка документа
-        // Важно: если OFX содержит отдельные куски "<?xml?>", это иногда может нарушить работу XDocument.
-        // Обычно достаточно загрузить файл напрямую (XDocument.Load).
-        // Если есть проблемы с заголовками, их можно удалить вручную заранее.
-        XDocument xdoc;
-        try
+        // Переходим к корневому элементу
+        while (reader.Read() && reader.NodeType != XmlNodeType.Element) { }
+
+        // Ищем элементы STMTTRN
+        while (reader.Read())
         {
-            xdoc = XDocument.Load(stream);
-            _logger.LogInformation("Документ OFX успешно загружен.");
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Ошибка при загрузке OFX документа: {ErrorMessage}", ex.Message);
-            throw;
-        }
+            if (reader.NodeType != XmlNodeType.Element || reader.Name != "STMTTRN")
+            {
+                continue;
+            }
 
-        // Получаем все элементы транзакций
-        var stmtTrnElements = xdoc.Descendants("STMTTRN").ToList();
-        _logger.LogInformation("Найдено элементов транзакций: {Count}.", stmtTrnElements.Count);
+            if (XNode.ReadFrom(reader) is not XElement trnElement)
+            {
+                continue;
+            }
 
-        var transactions = new List<OfxTransaction>();
-
-        foreach (var element in stmtTrnElements)
-        {
-            var fitIdValue = element.Element("FITID")?.Value;
-            var dtPostedRaw = element.Element("DTPOSTED")?.Value;
-            var memoValue = element.Element("MEMO")?.Value;
-            var nameValue = element.Element("NAME")?.Value;
-            var trnAmtValue = element.Element("TRNAMT")?.Value;
-
-            _logger.LogDebug("Обрабатывается транзакция FITID: {FitId}", fitIdValue);
+            var fitIdValue = trnElement.Element("FITID")?.Value;
+            var dtPostedRaw = trnElement.Element("DTPOSTED")?.Value;
+            var memoValue = trnElement.Element("MEMO")?.Value;
+            var nameValue = trnElement.Element("NAME")?.Value;
+            var trnAmtValue = trnElement.Element("TRNAMT")?.Value;
 
             var parsedDate = TryParseOfxDate(dtPostedRaw, _logger, fitIdValue ?? "");
 
-            // Разбор суммы
             decimal parsedAmount = 0;
             if (decimal.TryParse(trnAmtValue, NumberStyles.Any, CultureInfo.InvariantCulture, out var amt))
             {
                 parsedAmount = amt;
-                _logger.LogDebug("Сумма разобрана: {Amount}", parsedAmount);
-            }
-            else
-            {
-                _logger.LogWarning("Не удалось разобрать сумму: {TrnAmtValue} для FITID: {FitId}", trnAmtValue, fitIdValue);
             }
 
-            // Создаём DTO и добавляем в список
             var transaction = new OfxTransaction(
                 TranId: fitIdValue,
                 TranDate: parsedDate,
                 Category: memoValue,
                 Description: nameValue,
                 Amount: parsedAmount
-            ); 
+            );
 
-            transactions.Add(transaction);
-            _logger.LogDebug("Добавлена транзакция с ID: {TranId}", transaction.TranId);
+            yield return transaction;
         }
-
-        _logger.LogInformation("Разбор OFX файла завершен. Всего транзакций обработано: {Count}.", transactions.Count);
-        return transactions;
     }
+
+    // Константа с поддерживаемыми форматами дат OFX (только для чтения)
+    private static readonly IReadOnlyList<string> OfxDateFormats 
+        = Array.AsReadOnly(["yyyyMMddHHmmss.fff", "yyyyMMddHHmmss"]);
 
     /// <summary>
     /// Пробует разобрать дату OFX в нескольких форматах.
@@ -99,19 +83,24 @@ public class OfxParser : IOfxParser
             return null;
         }
 
-        string[] formats = { "yyyyMMddHHmmss.fff", "yyyyMMddHHmmss" };
-        foreach (var format in formats)
+        // Используем константу для форматов
+        foreach (var format in OfxDateFormats)
         {
-            int len = format.Length;
-            if (dtPostedRaw.Length >= len)
+            var len = format.Length;
+            if (dtPostedRaw.Length < len)
             {
-                string candidate = dtPostedRaw.Substring(0, len);
-                if (DateTime.TryParseExact(candidate, format, CultureInfo.InvariantCulture, DateTimeStyles.None, out var parsed))
-                {
-                    logger.LogDebug("Дата разобрана: {ParsedDate} (формат {Format})", parsed, format);
-                    return parsed;
-                }
+                continue;
             }
+
+            var candidate = dtPostedRaw.Substring(0, len);
+            if (!DateTime.TryParseExact(candidate, format, CultureInfo.InvariantCulture, DateTimeStyles.None,
+                    out var parsed))
+            {
+                continue;
+            }
+            
+            logger.LogDebug("Дата разобрана: {ParsedDate} (формат {Format})", parsed, format);
+            return parsed;
         }
         logger.LogWarning("Не удалось разобрать дату '{DtPostedRaw}' для FITID: {FitId}", dtPostedRaw, fitId);
         return null;

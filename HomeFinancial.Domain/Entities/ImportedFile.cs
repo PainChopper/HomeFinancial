@@ -22,6 +22,11 @@ public class ImportedFile : Entity
     /// </summary>
     public DateTime ImportedAt { get; set; }
 
+    /// <summary>
+    /// Статус файла
+    /// </summary>
+    public ImportedFileStatus Status { get; set; }
+
     // Публичный конструктор для EF Core и маппинга
     public ImportedFile() { }
 

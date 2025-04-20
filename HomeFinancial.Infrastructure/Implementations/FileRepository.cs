@@ -29,11 +29,6 @@ public class FileRepository(HomeFinancialDbContext dbContext, ILogger<FileReposi
     public override async Task<ImportedFile> CreateAsync(ImportedFile file, CancellationToken cancellationToken = default)
     {
         Logger.LogInformation("Attempting to add imported file: {FileName}", file.FileName);
-        if (await ExistsByFileNameAsync(file.FileName))
-        {
-            Logger.LogWarning("File {FileName} is already recorded in the database.", file.FileName);
-            throw new InvalidOperationException($"File {file.FileName} is already recorded in the database.");
-        }
         file.ImportedAt = DateTime.UtcNow;
         return await base.CreateAsync(file, cancellationToken);
     }
