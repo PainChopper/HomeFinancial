@@ -11,10 +11,6 @@ public class OfxParser : IOfxParser
 {
     private readonly ILogger<OfxParser> _logger;
 
-    /// <summary>
-    /// Создаёт экземпляр <see cref="OfxParser"/>.
-    /// </summary>
-    /// <param name="logger">Экземпляр логгера.</param>
     public OfxParser(ILogger<OfxParser> logger)
     {
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
@@ -46,9 +42,8 @@ public class OfxParser : IOfxParser
         }
 
         // Получаем все элементы транзакций
-        var stmtTrnElements = xdoc.Descendants("STMTTRN");
-        int transactionCount = stmtTrnElements.Count();
-        _logger.LogInformation("Найдено элементов транзакций: {Count}.", transactionCount);
+        var stmtTrnElements = xdoc.Descendants("STMTTRN").ToList();
+        _logger.LogInformation("Найдено элементов транзакций: {Count}.", stmtTrnElements.Count);
 
         var transactions = new List<OfxTransaction>();
 
@@ -62,42 +57,7 @@ public class OfxParser : IOfxParser
 
             _logger.LogDebug("Обрабатывается транзакция FITID: {FitId}", fitIdValue);
 
-            // Разбор даты
-            // Формат примерно "20250113224820.000[+3:MSK]".
-            DateTime parsedDate = default;
-            if (!string.IsNullOrWhiteSpace(dtPostedRaw))
-            {
-                try
-                {
-                    parsedDate = DateTime.ParseExact(
-                        dtPostedRaw.Substring(0, 17),
-                        "yyyyMMddHHmmss.fff",
-                        CultureInfo.InvariantCulture
-                    );
-                    _logger.LogDebug("Дата с миллисекундами разобрана: {ParsedDate}", parsedDate);
-                }
-                catch (FormatException)
-                {
-                    try
-                    {
-                        parsedDate = DateTime.ParseExact(
-                            dtPostedRaw.Substring(0, 14),
-                            "yyyyMMddHHmmss",
-                            CultureInfo.InvariantCulture
-                        );
-                        _logger.LogDebug("Дата без миллисекунд разобрана: {ParsedDate}", parsedDate);
-                    }
-                    catch (FormatException ex)
-                    {
-                        _logger.LogWarning("Не удалось разобрать дату '{DtPostedRaw}': {ErrorMessage}", dtPostedRaw, ex.Message);
-                        // Можно продолжить или выбросить исключение
-                    }
-                }
-            }
-            else
-            {
-                _logger.LogWarning("Значение DTPOSTED отсутствует или пустое для FITID: {FitId}", fitIdValue);
-            }
+            var parsedDate = TryParseOfxDate(dtPostedRaw, _logger, fitIdValue ?? "");
 
             // Разбор суммы
             decimal parsedAmount = 0;
@@ -113,12 +73,12 @@ public class OfxParser : IOfxParser
 
             // Создаём DTO и добавляем в список
             var transaction = new OfxTransaction(
-                fitIdValue ?? string.Empty,
-                parsedDate,
-                memoValue ?? string.Empty,
-                nameValue ?? string.Empty,
-                parsedAmount
-            );
+                TranId: fitIdValue,
+                TranDate: parsedDate,
+                Category: memoValue,
+                Description: nameValue,
+                Amount: parsedAmount
+            ); 
 
             transactions.Add(transaction);
             _logger.LogDebug("Добавлена транзакция с ID: {TranId}", transaction.TranId);
@@ -126,5 +86,34 @@ public class OfxParser : IOfxParser
 
         _logger.LogInformation("Разбор OFX файла завершен. Всего транзакций обработано: {Count}.", transactions.Count);
         return transactions;
+    }
+
+    /// <summary>
+    /// Пробует разобрать дату OFX в нескольких форматах.
+    /// </summary>
+    private static DateTime? TryParseOfxDate(string? dtPostedRaw, ILogger logger, string? fitId)
+    {
+        if (string.IsNullOrWhiteSpace(dtPostedRaw))
+        {
+            logger.LogWarning("Значение DTPOSTED отсутствует или пустое для FITID: {FitId}", fitId);
+            return null;
+        }
+
+        string[] formats = { "yyyyMMddHHmmss.fff", "yyyyMMddHHmmss" };
+        foreach (var format in formats)
+        {
+            int len = format.Length;
+            if (dtPostedRaw.Length >= len)
+            {
+                string candidate = dtPostedRaw.Substring(0, len);
+                if (DateTime.TryParseExact(candidate, format, CultureInfo.InvariantCulture, DateTimeStyles.None, out var parsed))
+                {
+                    logger.LogDebug("Дата разобрана: {ParsedDate} (формат {Format})", parsed, format);
+                    return parsed;
+                }
+            }
+        }
+        logger.LogWarning("Не удалось разобрать дату '{DtPostedRaw}' для FITID: {FitId}", dtPostedRaw, fitId);
+        return null;
     }
 }
