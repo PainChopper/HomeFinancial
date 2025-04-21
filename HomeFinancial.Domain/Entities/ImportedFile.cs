@@ -1,4 +1,5 @@
 using HomeFinancial.Domain.Common;
+using HomeFinancial.Domain.Services;
 
 namespace HomeFinancial.Domain.Entities;
 
@@ -48,7 +49,6 @@ public class ImportedFile : Entity
             throw new ArgumentException("Имя файла не может быть пустым", nameof(fileName));
 
         FileName = fileName;
-        ImportedAt = DateTime.UtcNow;
     }
 
     // Публичный конструктор с параметрами для поддержки маппинга Mapperly
@@ -58,4 +58,7 @@ public class ImportedFile : Entity
         FileName = fileName;
         ImportedAt = importedAt;
     }
+
+    // Удалить прямое использование DateTime.UtcNow, использовать через сервис в вызывающем коде
+    public void SetImportedAt(IDateTimeProvider provider) => ImportedAt = provider.UtcNow;
 }

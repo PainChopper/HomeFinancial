@@ -1,5 +1,6 @@
 using HomeFinancial.Domain.Entities;
 using HomeFinancial.Domain.Repositories;
+using HomeFinancial.Domain.Services;
 using HomeFinancial.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -9,7 +10,7 @@ namespace HomeFinancial.Infrastructure.Implementations;
 /// <summary>
 /// Репозиторий для работы с импортированными файлами
 /// </summary>
-public class FileRepository(ApplicationDbContext dbContext, ILogger<FileRepository> logger)
+public class FileRepository(ApplicationDbContext dbContext, ILogger<FileRepository> logger, IDateTimeProvider dateTimeProvider)
     : GenericGenericRepository<ImportedFile>(dbContext, logger), IFileRepository
 {
     /// <summary>
@@ -30,7 +31,7 @@ public class FileRepository(ApplicationDbContext dbContext, ILogger<FileReposito
     public override async Task<ImportedFile> CreateAsync(ImportedFile file, CancellationToken cancellationToken = default)
     {
         Logger.LogInformation("Attempting to add imported file: {FileName}", file.FileName);
-        file.ImportedAt = DateTime.UtcNow;
+        file.ImportedAt = dateTimeProvider.UtcNow;
         return await base.CreateAsync(file, cancellationToken);
     }
 }

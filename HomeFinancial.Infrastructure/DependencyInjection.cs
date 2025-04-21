@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using HomeFinancial.Domain.Repositories;
+using HomeFinancial.Domain.Services;
 using HomeFinancial.Infrastructure.Identity;
 using HomeFinancial.Infrastructure.Implementations;
 using HomeFinancial.Infrastructure.Persistence;
@@ -27,6 +28,7 @@ public static class DependencyInjection
         services.AddScoped<ICategoryRepository, CategoryRepository>();
         services.AddScoped<ITransactionRepository, TransactionRepository>();
         services.AddScoped<IFileRepository, FileRepository>();
+        services.AddScoped<IDateTimeProvider, DateTimeProvider>();
 
         return services;
     }

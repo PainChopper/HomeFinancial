@@ -1,5 +1,6 @@
 using HomeFinancial.Application.UseCases.ImportOfxFile;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 
 namespace HomeFinancial.WebApi.Controllers;
 
@@ -56,5 +57,18 @@ public class FilesController : ControllerBase
     {
         // TODO: Реализовать получение списка файлов через Application-слой
         return Ok(new { Files = new List<object>(), NextCursor = (int?)null });
+    }
+
+    /// <summary>
+    /// Получить транзакции пользователя (только свои данные)
+    /// </summary>
+    /// <param name="userId">Id пользователя (long, строкой)</param>
+    /// <returns>Список транзакций пользователя</returns>
+    [Authorize(Policy = "OwnData")]
+    [HttpGet("users/{userId}/transactions")]
+    public IActionResult GetUserTransactions(string userId)
+    {
+        // TODO: Реализовать получение транзакций только для своего userId
+        return Ok(new { Transactions = new List<object>() });
     }
 }

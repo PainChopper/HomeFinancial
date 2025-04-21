@@ -3,7 +3,19 @@ using Serilog;
 using HomeFinancial.Application;
 using HomeFinancial.WebApi;
 
+using HomeFinancial.WebApi.Auth;
+using Microsoft.AspNetCore.Authorization;
+
 var builder = WebApplication.CreateBuilder(args);
+
+// Регистрация политики доступа только к своим данным
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("OwnData", policy =>
+        policy.Requirements.Add(new OwnDataRequirement()));
+});
+builder.Services.AddSingleton<IAuthorizationHandler, OwnDataHandler>();
+builder.Services.AddHttpContextAccessor();
 
 // Настройка Serilog из файла конфигурации
 Log.Logger = new LoggerConfiguration()

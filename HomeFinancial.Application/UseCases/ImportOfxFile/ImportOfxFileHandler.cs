@@ -1,3 +1,4 @@
+using HomeFinancial.Domain.Entities;
 using Microsoft.Extensions.Logging;
 using HomeFinancial.OfxParser;
 using HomeFinancial.Domain.Repositories;
@@ -12,18 +13,21 @@ public class ImportOfxFileHandler : IImportOfxFileHandler
     private readonly IOfxParser _parser;
     private readonly ITransactionRepository _transactionRepository;
     private readonly IFileRepository _fileRepository;
+    private readonly ICategoryRepository _categoryRepository;
     private readonly ILogger<ImportOfxFileHandler> _logger;
 
     public ImportOfxFileHandler(
         IOfxParser parser,
         ITransactionRepository transactionRepository,
         IFileRepository fileRepository,
+        ICategoryRepository categoryRepository,
         ILogger<ImportOfxFileHandler> logger)
     {
-        _parser = parser;
-        _transactionRepository = transactionRepository;
-        _fileRepository = fileRepository;
-        _logger = logger;
+        _parser = parser ?? throw new ArgumentNullException(nameof(parser));
+        _transactionRepository = transactionRepository ?? throw new ArgumentNullException(nameof(transactionRepository));
+        _fileRepository = fileRepository ?? throw new ArgumentNullException(nameof(fileRepository));
+        _categoryRepository = categoryRepository ?? throw new ArgumentNullException(nameof(categoryRepository));
+        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
     /// <summary>
@@ -39,17 +43,17 @@ public class ImportOfxFileHandler : IImportOfxFileHandler
             var importedFile = await _fileRepository.GetByFileNameAsync(command.FileName);
             if (importedFile == null)
             {
-                importedFile = new Domain.Entities.ImportedFile(command.FileName)
+                importedFile = new ImportedFile(command.FileName)
                 {
                     ImportedAt = DateTime.UtcNow,
-                    Status = Domain.Entities.ImportedFileStatus.Processing
+                    Status = ImportedFileStatus.Processing
                 };
                 await _fileRepository.CreateAsync(importedFile, cancellationToken);
             }
             else
             {
                 // Если файл уже существует, обновляем его статус
-                importedFile.Status = Domain.Entities.ImportedFileStatus.Processing;
+                importedFile.Status = ImportedFileStatus.Processing;
                 await _fileRepository.UpdateAsync(importedFile, cancellationToken);
             }
             int fileId = importedFile.Id;
@@ -156,7 +160,7 @@ public class ImportOfxFileHandler : IImportOfxFileHandler
             }
 
             // Обновляем статус файла на "Обработан"
-            importedFile.Status = Domain.Entities.ImportedFileStatus.Processed;
+            importedFile.Status = ImportedFileStatus.Processed;
             await _fileRepository.UpdateAsync(importedFile, cancellationToken);
 
             // Логируем итоговую информацию
@@ -176,7 +180,7 @@ public class ImportOfxFileHandler : IImportOfxFileHandler
             var errorFile = await _fileRepository.GetByFileNameAsync(command.FileName);
             if (errorFile != null)
             {
-                errorFile.Status = Domain.Entities.ImportedFileStatus.Error;
+                errorFile.Status = ImportedFileStatus.Error;
                 await _fileRepository.UpdateAsync(errorFile, cancellationToken);
             }
             
@@ -191,14 +195,31 @@ public class ImportOfxFileHandler : IImportOfxFileHandler
     {
         try
         {
-            // TODO: Реализовать маппинг из DTO в сущности и сохранение через репозиторий
-            // var entities = batch.Select(dto => _mapper.Map<Income>(dto)).ToList();
-            // await _incomeRepository.AddRangeAsync(entities, cancellationToken);
-            
+            var categoryCache = new Dictionary<string, Category?>();
+            var entities = new List<BankTransaction>(batch.Count);
+            foreach (var dto in batch)
+            {
+                if (string.IsNullOrWhiteSpace(dto.Category))
+                    throw new Exception($"Не указана категория у транзакции {dto.TranId}");
+                if (!categoryCache.TryGetValue(dto.Category, out var category) || category == null)
+                {
+                    category = await _categoryRepository.GetOrCreateAsync(dto.Category, cancellationToken);
+                    categoryCache[dto.Category] = category;
+                }
+                var entity = new BankTransaction(
+                    fitId: dto.TranId ?? string.Empty,
+                    date: dto.TranDate ?? DateTime.MinValue,
+                    amount: dto.Amount,
+                    description: dto.Description ?? string.Empty,
+                    categoryId: category.Id
+                );
+                entities.Add(entity);
+            }
+            foreach (var entity in entities)
+            {
+                await _transactionRepository.CreateAsync(entity, cancellationToken);
+            }
             _logger.LogInformation("Сохранен пакет доходных транзакций: {Count}", batch.Count);
-            
-            // Пока используем заглушку
-            await Task.CompletedTask;
         }
         catch (Exception ex)
         {
@@ -214,14 +235,31 @@ public class ImportOfxFileHandler : IImportOfxFileHandler
     {
         try
         {
-            // TODO: Реализовать маппинг из DTO в сущности и сохранение через репозиторий
-            // var entities = batch.Select(dto => _mapper.Map<Expense>(dto)).ToList();
-            // await _expenseRepository.AddRangeAsync(entities, cancellationToken);
-            
+            var categoryCache = new Dictionary<string, Category?>();
+            var entities = new List<BankTransaction>(batch.Count);
+            foreach (var dto in batch)
+            {
+                if (string.IsNullOrWhiteSpace(dto.Category))
+                    throw new Exception($"Не указана категория у транзакции {dto.TranId}");
+                if (!categoryCache.TryGetValue(dto.Category, out var category) || category == null)
+                {
+                    category = await _categoryRepository.GetOrCreateAsync(dto.Category, cancellationToken);
+                    categoryCache[dto.Category] = category;
+                }
+                var entity = new BankTransaction(
+                    fitId: dto.TranId ?? string.Empty,
+                    date: dto.TranDate ?? DateTime.MinValue,
+                    amount: dto.Amount,
+                    description: dto.Description ?? string.Empty,
+                    categoryId: category.Id
+                );
+                entities.Add(entity);
+            }
+            foreach (var entity in entities)
+            {
+                await _transactionRepository.CreateAsync(entity, cancellationToken);
+            }
             _logger.LogInformation("Сохранен пакет расходных транзакций: {Count}", batch.Count);
-            
-            // Пока используем заглушку
-            await Task.CompletedTask;
         }
         catch (Exception ex)
         {
