@@ -58,8 +58,8 @@ public class ImportOfxFileHandler : IImportOfxFileHandler
             const int batchSize = 100;
             
             // Пакеты для доходов и расходов
-            var incomeBatch = new List<IncomeTransactionDto>(batchSize);
-            var expenseBatch = new List<ExpenseTransactionDto>(batchSize);
+            var incomeBatch = new List<TransactionDto>(batchSize);
+            var expenseBatch = new List<TransactionDto>(batchSize);
             
             // Счетчики и ошибки
             var errors = new List<string>();
@@ -89,7 +89,7 @@ public class ImportOfxFileHandler : IImportOfxFileHandler
                 switch (t.Amount)
                 {
                     case > 0:
-                        var incomeDto = new IncomeTransactionDto
+                        var incomeDto = new TransactionDto
                         {
                             TranId = t.TranId,
                             TranDate = t.TranDate,
@@ -115,7 +115,7 @@ public class ImportOfxFileHandler : IImportOfxFileHandler
                         break;
                         
                     case < 0:
-                        var expenseDto = new ExpenseTransactionDto
+                        var expenseDto = new TransactionDto
                         {
                             TranId = t.TranId,
                             TranDate = t.TranDate,
@@ -187,7 +187,7 @@ public class ImportOfxFileHandler : IImportOfxFileHandler
     /// <summary>
     /// Сохраняет пакет доходных транзакций
     /// </summary>
-    private async Task SaveIncomeBatchAsync(List<IncomeTransactionDto> batch, CancellationToken cancellationToken)
+    private async Task SaveIncomeBatchAsync(List<TransactionDto> batch, CancellationToken cancellationToken)
     {
         try
         {
@@ -210,7 +210,7 @@ public class ImportOfxFileHandler : IImportOfxFileHandler
     /// <summary>
     /// Сохраняет пакет расходных транзакций
     /// </summary>
-    private async Task SaveExpenseBatchAsync(List<ExpenseTransactionDto> batch, CancellationToken cancellationToken)
+    private async Task SaveExpenseBatchAsync(List<TransactionDto> batch, CancellationToken cancellationToken)
     {
         try
         {

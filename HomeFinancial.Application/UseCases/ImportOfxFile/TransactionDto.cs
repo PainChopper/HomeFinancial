@@ -3,7 +3,7 @@ namespace HomeFinancial.Application.UseCases.ImportOfxFile;
 /// <summary>
 /// Базовый DTO для банковской транзакции из OFX-файла
 /// </summary>
-public abstract class BaseTransactionDto
+public class TransactionDto
 {
     /// <summary>
     /// Идентификатор транзакции
