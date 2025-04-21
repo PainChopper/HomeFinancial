@@ -1,17 +1,18 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using HomeFinancial.Infrastructure.Persistence;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
 using Microsoft.Extensions.Configuration;
 
 namespace HomeFinancial.Infrastructure;
 
-public class HomeFinancialDbContextFactory : IDesignTimeDbContextFactory<HomeFinancialDbContext>
+public class ApplicationDbContextFactory : IDesignTimeDbContextFactory<ApplicationDbContext>
 {
-    public HomeFinancialDbContext CreateDbContext(string[] args)
+    public ApplicationDbContext CreateDbContext(string[] args)
     {
         // Создание экземпляра ConfigurationBuilder
         var configuration = new ConfigurationBuilder()
             .SetBasePath(Directory.GetCurrentDirectory()) // Указывает текущую директорию
-            .AddUserSecrets<HomeFinancialDbContextFactory>() // Подключение User Secrets
+            .AddUserSecrets<ApplicationDbContextFactory>() // Подключение User Secrets
             .Build();
 
         // Получение строки подключения
@@ -22,9 +23,9 @@ public class HomeFinancialDbContextFactory : IDesignTimeDbContextFactory<HomeFin
         }
 
         // Настройка DbContextOptionsBuilder
-        var optionsBuilder = new DbContextOptionsBuilder<HomeFinancialDbContext>();
+        var optionsBuilder = new DbContextOptionsBuilder<ApplicationDbContext>();
         optionsBuilder.UseNpgsql(connectionString);
 
-        return new HomeFinancialDbContext(optionsBuilder.Options);
+        return new ApplicationDbContext(optionsBuilder.Options);
     }
 }

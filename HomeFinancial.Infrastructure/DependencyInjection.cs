@@ -2,7 +2,10 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using HomeFinancial.Domain.Repositories;
+using HomeFinancial.Infrastructure.Identity;
 using HomeFinancial.Infrastructure.Implementations;
+using HomeFinancial.Infrastructure.Persistence;
+using Microsoft.AspNetCore.Identity;
 
 namespace HomeFinancial.Infrastructure;
 
@@ -14,8 +17,10 @@ public static class DependencyInjection
     public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
         var connectionString = configuration.GetConnectionString("PostgresConnection");
-        services.AddDbContext<HomeFinancialDbContext>(options =>
+        services.AddDbContext<ApplicationDbContext>(options =>
             options.UseNpgsql(connectionString));
+        services.AddIdentityCore<ApplicationUser>()
+        .AddEntityFrameworkStores<ApplicationDbContext>();
 
         // Регистрация репозиториев
         services.AddScoped(typeof(IGenericRepository<>), typeof(GenericGenericRepository<>));

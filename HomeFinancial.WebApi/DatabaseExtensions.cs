@@ -1,4 +1,5 @@
 using HomeFinancial.Infrastructure;
+using HomeFinancial.Infrastructure.Persistence;
 
 namespace HomeFinancial.WebApi;
 
@@ -13,7 +14,7 @@ public static class DatabaseExtensions
         var logger = services.GetRequiredService<ILogger<Program>>();
         using var scope = services.CreateScope();
         var provider = scope.ServiceProvider;
-        var dbContext = provider.GetRequiredService<HomeFinancialDbContext>();
+        var dbContext = provider.GetRequiredService<ApplicationDbContext>();
 
         logger.LogInformation("Проверка соединения с базой данных.");
 

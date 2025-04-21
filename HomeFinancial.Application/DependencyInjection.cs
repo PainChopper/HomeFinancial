@@ -1,3 +1,4 @@
+using HomeFinancial.Application.Common;
 using Microsoft.Extensions.DependencyInjection;
 using HomeFinancial.OfxParser;
 using HomeFinancial.Application.UseCases.ImportOfxFile;
@@ -10,6 +11,7 @@ public static class DependencyInjection
     {
         services.AddScoped<IOfxParser, OfxParser.OfxParser>();
         services.AddScoped<IImportOfxFileHandler, ImportOfxFileHandler>();
+        services.AddScoped<IDateTimeProvider, SystemDateTimeProvider>();
         return services;
     }
 }

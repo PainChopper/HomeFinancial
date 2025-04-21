@@ -1,5 +1,6 @@
 using HomeFinancial.Domain.Common;
 using HomeFinancial.Domain.Repositories;
+using HomeFinancial.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
@@ -10,11 +11,11 @@ namespace HomeFinancial.Infrastructure.Implementations;
 /// </summary>
 public class GenericGenericRepository<T> : IGenericRepository<T> where T : class, IEntity
 {
-    protected readonly HomeFinancialDbContext _dbContext;
+    protected readonly ApplicationDbContext _dbContext;
     protected readonly ILogger<GenericGenericRepository<T>> Logger;
     protected readonly DbSet<T> DbSet;
 
-    public GenericGenericRepository(HomeFinancialDbContext dbContext, ILogger<GenericGenericRepository<T>> logger)
+    public GenericGenericRepository(ApplicationDbContext dbContext, ILogger<GenericGenericRepository<T>> logger)
     {
         _dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
         Logger = logger ?? throw new ArgumentNullException(nameof(logger));

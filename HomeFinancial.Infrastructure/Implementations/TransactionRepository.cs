@@ -1,5 +1,6 @@
 using HomeFinancial.Domain.Entities;
 using HomeFinancial.Domain.Repositories;
+using HomeFinancial.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
@@ -9,7 +10,7 @@ namespace HomeFinancial.Infrastructure.Implementations;
 /// Репозиторий для работы с банковскими транзакциями
 /// </summary>
 public class TransactionRepository(
-    HomeFinancialDbContext dbContext,
+    ApplicationDbContext dbContext,
     ILogger<GenericGenericRepository<BankTransaction>> logger)
     : GenericGenericRepository<BankTransaction>(dbContext, logger), ITransactionRepository
 {

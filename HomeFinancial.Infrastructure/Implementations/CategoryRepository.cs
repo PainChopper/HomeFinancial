@@ -1,5 +1,6 @@
 using HomeFinancial.Domain.Entities;
 using HomeFinancial.Domain.Repositories;
+using HomeFinancial.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
@@ -8,7 +9,7 @@ namespace HomeFinancial.Infrastructure.Implementations;
 /// <summary>
 /// Репозиторий для работы с категориями
 /// </summary>
-public class CategoryRepository(HomeFinancialDbContext dbContext, ILogger<GenericGenericRepository<Category>> logger)
+public class CategoryRepository(ApplicationDbContext dbContext, ILogger<GenericGenericRepository<Category>> logger)
     : GenericGenericRepository<Category>(dbContext, logger), ICategoryRepository
 {
     /// <summary>

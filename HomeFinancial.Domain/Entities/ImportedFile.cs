@@ -27,6 +27,17 @@ public class ImportedFile : Entity
     /// </summary>
     public ImportedFileStatus Status { get; set; }
 
+    /// <summary>
+    /// JSON сериализованный результат импорта (ImportResult).
+    /// </summary>
+    public string? ImportResultJson { get; set; }
+
+    /// <summary>
+    /// Внешний ключ пользователя (Identity).
+    /// </summary>
+    public long UserId { get; set; }
+
+
     // Публичный конструктор для EF Core и маппинга
     public ImportedFile() { }
 

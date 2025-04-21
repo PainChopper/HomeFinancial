@@ -1,5 +1,6 @@
 using HomeFinancial.Domain.Entities;
 using HomeFinancial.Domain.Repositories;
+using HomeFinancial.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
@@ -8,7 +9,7 @@ namespace HomeFinancial.Infrastructure.Implementations;
 /// <summary>
 /// Репозиторий для работы с импортированными файлами
 /// </summary>
-public class FileRepository(HomeFinancialDbContext dbContext, ILogger<FileRepository> logger)
+public class FileRepository(ApplicationDbContext dbContext, ILogger<FileRepository> logger)
     : GenericGenericRepository<ImportedFile>(dbContext, logger), IFileRepository
 {
     /// <summary>
