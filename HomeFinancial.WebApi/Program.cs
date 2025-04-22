@@ -1,10 +1,9 @@
-using HomeFinancial.Infrastructure;
-using Serilog;
 using HomeFinancial.Application;
+using HomeFinancial.Infrastructure;
 using HomeFinancial.WebApi;
-
 using HomeFinancial.WebApi.Auth;
 using Microsoft.AspNetCore.Authorization;
+using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -40,7 +39,7 @@ var app = builder.Build();
 app.UseGlobalExceptionHandler();
 
 // Проверка соединения с базой данных
-if (!app.Services.CheckDatabaseConnection())
+if (!await app.Services.CheckDatabaseConnectionAsync())
 {
     Environment.Exit(1);
 }

@@ -1,7 +1,7 @@
 using System.Globalization;
+using System.Xml;
 using System.Xml.Linq;
 using Microsoft.Extensions.Logging;
-using System.Xml;
 
 namespace HomeFinancial.OfxParser;
 

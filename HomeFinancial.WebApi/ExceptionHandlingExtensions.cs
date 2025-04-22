@@ -1,6 +1,5 @@
-using Microsoft.AspNetCore.Diagnostics;
 using System.Text.Json;
-using Microsoft.Extensions.Logging;
+using Microsoft.AspNetCore.Diagnostics;
 
 namespace HomeFinancial.WebApi;
 

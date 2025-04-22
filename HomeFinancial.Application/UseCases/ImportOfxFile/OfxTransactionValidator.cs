@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using HomeFinancial.OfxParser;
 
 namespace HomeFinancial.Application.UseCases.ImportOfxFile

@@ -1,5 +1,4 @@
 using HomeFinancial.Domain.Common;
-using HomeFinancial.Domain.Services;
 
 namespace HomeFinancial.Domain.Entities;
 
@@ -58,7 +57,4 @@ public class ImportedFile : Entity
         FileName = fileName;
         ImportedAt = importedAt;
     }
-
-    // Удалить прямое использование DateTime.UtcNow, использовать через сервис в вызывающем коде
-    public void SetImportedAt(IDateTimeProvider provider) => ImportedAt = provider.UtcNow;
 }

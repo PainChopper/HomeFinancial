@@ -1,8 +1,8 @@
+using HomeFinancial.Domain.Entities;
+using HomeFinancial.Infrastructure.Identity;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
-using HomeFinancial.Infrastructure.Identity;
-using HomeFinancial.Domain.Entities;
-using Microsoft.AspNetCore.Identity;
 
 namespace HomeFinancial.Infrastructure.Persistence;
 

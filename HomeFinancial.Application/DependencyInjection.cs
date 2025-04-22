@@ -1,7 +1,7 @@
 using HomeFinancial.Application.Common;
-using Microsoft.Extensions.DependencyInjection;
-using HomeFinancial.OfxParser;
 using HomeFinancial.Application.UseCases.ImportOfxFile;
+using HomeFinancial.OfxParser;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace HomeFinancial.Application;
 

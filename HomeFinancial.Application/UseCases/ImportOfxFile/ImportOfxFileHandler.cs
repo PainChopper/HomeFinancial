@@ -1,7 +1,7 @@
 using HomeFinancial.Domain.Entities;
-using Microsoft.Extensions.Logging;
-using HomeFinancial.OfxParser;
 using HomeFinancial.Domain.Repositories;
+using HomeFinancial.OfxParser;
+using Microsoft.Extensions.Logging;
 
 namespace HomeFinancial.Application.UseCases.ImportOfxFile;
 

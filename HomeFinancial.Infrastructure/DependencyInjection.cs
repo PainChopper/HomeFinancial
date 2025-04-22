@@ -1,12 +1,12 @@
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
+using HomeFinancial.Application.Common.Abstractions;
 using HomeFinancial.Domain.Repositories;
-using HomeFinancial.Domain.Services;
+using HomeFinancial.Infrastructure.Database;
 using HomeFinancial.Infrastructure.Identity;
 using HomeFinancial.Infrastructure.Implementations;
 using HomeFinancial.Infrastructure.Persistence;
-using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace HomeFinancial.Infrastructure;
 
@@ -23,12 +23,13 @@ public static class DependencyInjection
         services.AddIdentityCore<ApplicationUser>()
         .AddEntityFrameworkStores<ApplicationDbContext>();
 
+        services.AddScoped<IDatabaseHealthChecker, DatabaseHealthChecker>();
+        
         // Регистрация репозиториев
         services.AddScoped(typeof(IGenericRepository<>), typeof(GenericGenericRepository<>));
         services.AddScoped<ICategoryRepository, CategoryRepository>();
         services.AddScoped<ITransactionRepository, TransactionRepository>();
         services.AddScoped<IFileRepository, FileRepository>();
-        services.AddScoped<IDateTimeProvider, DateTimeProvider>();
 
         return services;
     }

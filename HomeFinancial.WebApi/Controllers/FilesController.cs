@@ -1,6 +1,6 @@
 using HomeFinancial.Application.UseCases.ImportOfxFile;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 
 namespace HomeFinancial.WebApi.Controllers;
 

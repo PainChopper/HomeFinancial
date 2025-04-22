@@ -1,7 +1,5 @@
-using Microsoft.AspNetCore.Identity;
-using System.Collections.Generic;
 using HomeFinancial.Application.Common;
-using HomeFinancial.Domain.Entities;
+using Microsoft.AspNetCore.Identity;
 
 namespace HomeFinancial.Infrastructure.Identity;
 
