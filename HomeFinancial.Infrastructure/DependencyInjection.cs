@@ -1,7 +1,6 @@
 using HomeFinancial.Application.Common.Abstractions;
 using HomeFinancial.Domain.Repositories;
 using HomeFinancial.Infrastructure.Database;
-using HomeFinancial.Infrastructure.Identity;
 using HomeFinancial.Infrastructure.Implementations;
 using HomeFinancial.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
@@ -19,10 +18,10 @@ public static class DependencyInjection
     {
         var connectionString = configuration.GetConnectionString("PostgresConnection");
         services.AddDbContext<ApplicationDbContext>(options =>
-            options.UseNpgsql(connectionString));
-        services.AddIdentityCore<ApplicationUser>()
-        .AddEntityFrameworkStores<ApplicationDbContext>();
-
+            options.UseNpgsql(connectionString)
+                .UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking)
+                .UseSnakeCaseNamingConvention());
+    
         services.AddScoped<IDatabaseHealthChecker, DatabaseHealthChecker>();
         
         // Регистрация репозиториев

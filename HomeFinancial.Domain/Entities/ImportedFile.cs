@@ -8,11 +8,6 @@ namespace HomeFinancial.Domain.Entities;
 public class ImportedFile : Entity
 {
     /// <summary>
-    /// Идентификатор
-    /// </summary>
-    public int Id { get; set; }
-
-    /// <summary>
     /// Имя файла
     /// </summary>
     public string FileName { get; set; } = null!;
@@ -32,29 +27,12 @@ public class ImportedFile : Entity
     /// </summary>
     public string? ImportResultJson { get; set; }
 
-    /// <summary>
-    /// Внешний ключ пользователя (Identity).
-    /// </summary>
-    public long UserId { get; set; }
-
-
     // Публичный конструктор для EF Core и маппинга
     public ImportedFile() { }
 
     // Конструктор для создания новой записи об импортированном файле
     public ImportedFile(string fileName)
     {
-        if (string.IsNullOrWhiteSpace(fileName))
-            throw new ArgumentException("Имя файла не может быть пустым", nameof(fileName));
-
         FileName = fileName;
-    }
-
-    // Публичный конструктор с параметрами для поддержки маппинга Mapperly
-    public ImportedFile(int id, string fileName, DateTime importedAt)
-    {
-        Id = id;
-        FileName = fileName;
-        ImportedAt = importedAt;
     }
 }

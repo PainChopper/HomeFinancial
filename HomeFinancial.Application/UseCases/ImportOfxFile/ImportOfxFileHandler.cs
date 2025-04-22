@@ -1,3 +1,4 @@
+using HomeFinancial.Application.Validators;
 using HomeFinancial.Domain.Entities;
 using HomeFinancial.Domain.Repositories;
 using HomeFinancial.OfxParser;
@@ -37,155 +38,144 @@ public class ImportOfxFileHandler : IImportOfxFileHandler
     {
         _logger.LogInformation("Импорт OFX-файла: {FileName}", command.FileName);
 
-        try
+        var importedFile = await CreateFile(command, cancellationToken);
+        var fileId = importedFile.Id;
+
+        #region  OLD
+
+            
+        // Размер пакета для обработки транзакций
+        const int batchSize = 100;
+            
+        // Пакеты для доходов и расходов
+        var incomeBatch = new List<TransactionDto>(batchSize);
+        var expenseBatch = new List<TransactionDto>(batchSize);
+            
+        // Счетчики и ошибки
+        var errors = new List<string>();
+        var totalCount = 0;
+        var incomeCount = 0;
+        var expenseCount = 0;
+        var processedCount = 0;
+        
+        // Потоковая обработка транзакций
+        foreach (var t in _parser.ParseOfxFile(command.FileStream))
         {
-            // Получаем/создаём запись о файле и получаем его Id
-            var importedFile = await _fileRepository.GetByFileNameAsync(command.FileName);
-            if (importedFile == null)
+            totalCount++;
+        
+            // Валидация транзакции через отдельный валидатор
+            var validation = OfxTransactionValidator.Validate(t);
+            if (!validation.IsValid)
             {
-                importedFile = new ImportedFile(command.FileName)
+                foreach (var err in validation.Errors)
                 {
-                    ImportedAt = DateTime.UtcNow,
-                    Status = ImportedFileStatus.Processing
-                };
-                await _fileRepository.CreateAsync(importedFile, cancellationToken);
+                    _logger.LogWarning(err);
+                    errors.Add(err);
+                }
+                continue;
             }
-            else
+        
+            // Классификация и добавление в соответствующий пакет
+            switch (t.Amount)
             {
-                // Если файл уже существует, обновляем его статус
-                importedFile.Status = ImportedFileStatus.Processing;
-                await _fileRepository.UpdateAsync(importedFile, cancellationToken);
-            }
-            int fileId = importedFile.Id;
-
-            // Размер пакета для обработки транзакций
-            const int batchSize = 100;
-            
-            // Пакеты для доходов и расходов
-            var incomeBatch = new List<TransactionDto>(batchSize);
-            var expenseBatch = new List<TransactionDto>(batchSize);
-            
-            // Счетчики и ошибки
-            var errors = new List<string>();
-            var totalCount = 0;
-            var incomeCount = 0;
-            var expenseCount = 0;
-            var processedCount = 0;
-
-            // Потоковая обработка транзакций
-            foreach (var t in _parser.ParseOfxFile(command.FileStream))
-            {
-                totalCount++;
-
-                // Валидация транзакции через отдельный валидатор
-                var validation = OfxTransactionValidator.Validate(t);
-                if (!validation.IsValid)
-                {
-                    foreach (var err in validation.Errors)
+                case > 0:
+                    var incomeDto = new TransactionDto
                     {
-                        _logger.LogWarning(err);
-                        errors.Add(err);
+                        TranId = t.TranId,
+                        TranDate = t.TranDate,
+                        Category = t.Category,
+                        Description = t.Description,
+                        Amount = t.Amount.Value,
+                        FileId = fileId
+                    };
+                    incomeBatch.Add(incomeDto);
+                    incomeCount++;
+                        
+                    // Если пакет заполнен, сохраняем и очищаем
+                    if (incomeBatch.Count >= batchSize)
+                    {
+                        await SaveIncomeBatchAsync(incomeBatch, cancellationToken);
+                        processedCount += incomeBatch.Count;
+                        incomeBatch.Clear();
+                            
+                        // Логируем прогресс
+                        _logger.LogInformation("Обработано транзакций: {ProcessedCount}/{TotalCount}", 
+                            processedCount, totalCount);
                     }
-                    continue;
-                }
-
-                // Классификация и добавление в соответствующий пакет
-                switch (t.Amount)
-                {
-                    case > 0:
-                        var incomeDto = new TransactionDto
-                        {
-                            TranId = t.TranId,
-                            TranDate = t.TranDate,
-                            Category = t.Category,
-                            Description = t.Description,
-                            Amount = t.Amount.Value,
-                            FileId = fileId
-                        };
-                        incomeBatch.Add(incomeDto);
-                        incomeCount++;
+                    break;
                         
-                        // Если пакет заполнен, сохраняем и очищаем
-                        if (incomeBatch.Count >= batchSize)
-                        {
-                            await SaveIncomeBatchAsync(incomeBatch, cancellationToken);
-                            processedCount += incomeBatch.Count;
-                            incomeBatch.Clear();
+                case < 0:
+                    var expenseDto = new TransactionDto
+                    {
+                        TranId = t.TranId,
+                        TranDate = t.TranDate,
+                        Category = t.Category,
+                        Description = t.Description,
+                        Amount = -t.Amount.Value,
+                        FileId = fileId
+                    };
+                    expenseBatch.Add(expenseDto);
+                    expenseCount++;
+                        
+                    // Если пакет заполнен, сохраняем и очищаем
+                    if (expenseBatch.Count >= batchSize)
+                    {
+                        await SaveExpenseBatchAsync(expenseBatch, cancellationToken);
+                        processedCount += expenseBatch.Count;
+                        expenseBatch.Clear();
                             
-                            // Логируем прогресс
-                            _logger.LogInformation("Обработано транзакций: {ProcessedCount}/{TotalCount}", 
-                                processedCount, totalCount);
-                        }
-                        break;
-                        
-                    case < 0:
-                        var expenseDto = new TransactionDto
-                        {
-                            TranId = t.TranId,
-                            TranDate = t.TranDate,
-                            Category = t.Category,
-                            Description = t.Description,
-                            Amount = -t.Amount.Value,
-                            FileId = fileId
-                        };
-                        expenseBatch.Add(expenseDto);
-                        expenseCount++;
-                        
-                        // Если пакет заполнен, сохраняем и очищаем
-                        if (expenseBatch.Count >= batchSize)
-                        {
-                            await SaveExpenseBatchAsync(expenseBatch, cancellationToken);
-                            processedCount += expenseBatch.Count;
-                            expenseBatch.Clear();
-                            
-                            // Логируем прогресс
-                            _logger.LogInformation("Обработано транзакций: {ProcessedCount}/{TotalCount}", 
-                                processedCount, totalCount);
-                        }
-                        break;
-                }
-            }
-
-            // Сохраняем оставшиеся транзакции
-            if (incomeBatch.Count > 0)
-            {
-                await SaveIncomeBatchAsync(incomeBatch, cancellationToken);
-                processedCount += incomeBatch.Count;
-            }
-            
-            if (expenseBatch.Count > 0)
-            {
-                await SaveExpenseBatchAsync(expenseBatch, cancellationToken);
-                processedCount += expenseBatch.Count;
-            }
-
-            // Обновляем статус файла на "Обработан"
-            importedFile.Status = ImportedFileStatus.Processed;
-            await _fileRepository.UpdateAsync(importedFile, cancellationToken);
-
-            // Логируем итоговую информацию
-            _logger.LogInformation("Импорт завершен. Всего транзакций: {TotalCount}", totalCount);
-            _logger.LogInformation("Поступлений: {IncomeCount}, Трат: {ExpenseCount}", incomeCount, expenseCount);
-            
-            if (errors.Count > 0)
-            {
-                _logger.LogWarning("Ошибки при обработке файла: {Errors}", string.Join("; ", errors));
+                        // Логируем прогресс
+                        _logger.LogInformation("Обработано транзакций: {ProcessedCount}/{TotalCount}", 
+                            processedCount, totalCount);
+                    }
+                    break;
             }
         }
-        catch (Exception ex)
+        
+        // Сохраняем оставшиеся транзакции
+        if (incomeBatch.Count > 0)
         {
-            _logger.LogError(ex, "Ошибка при импорте файла {FileName}", command.FileName);
-            
-            // Обновляем статус файла на "Ошибка"
-            var errorFile = await _fileRepository.GetByFileNameAsync(command.FileName);
-            if (errorFile != null)
-            {
-                errorFile.Status = ImportedFileStatus.Error;
-                await _fileRepository.UpdateAsync(errorFile, cancellationToken);
-            }
-            
-            throw; // Пробрасываем исключение дальше
+            await SaveIncomeBatchAsync(incomeBatch, cancellationToken);
+            processedCount += incomeBatch.Count;
         }
+            
+        if (expenseBatch.Count > 0)
+        {
+            await SaveExpenseBatchAsync(expenseBatch, cancellationToken);
+            processedCount += expenseBatch.Count;
+        }
+        
+        // Обновляем статус файла на "Обработан"
+        importedFile.Status = ImportedFileStatus.Processed;
+        await _fileRepository.UpdateAsync(importedFile, cancellationToken);
+        
+        // Логируем итоговую информацию
+        _logger.LogInformation("Импорт завершен. Всего транзакций: {TotalCount}", totalCount);
+        _logger.LogInformation("Поступлений: {IncomeCount}, Трат: {ExpenseCount}", incomeCount, expenseCount);
+            
+        if (errors.Count > 0)
+        {
+            _logger.LogWarning("Ошибки при обработке файла: {Errors}", string.Join("; ", errors));
+        }
+
+        #endregion
+    }
+
+    private async Task<ImportedFile> CreateFile(ImportOfxFileCommand command, CancellationToken cancellationToken)
+    {
+        var importedFile = await _fileRepository.GetByFileNameAsync(command.FileName);
+        if (importedFile != null)
+        {
+            throw new InvalidOperationException($"Файл с именем '{command.FileName}' уже импортирован и не может быть повторно загружен.");
+        }
+        importedFile = new ImportedFile(command.FileName);
+        var validator = new ImportedFileValidator();
+        var validationResult = validator.Validate(importedFile);
+        if (!validationResult.IsValid)
+            throw new FluentValidation.ValidationException(validationResult.Errors);
+        importedFile.ImportedAt = DateTime.UtcNow;
+        importedFile.Status = ImportedFileStatus.Processing;
+        return await _fileRepository.CreateAsync(importedFile, cancellationToken);
     }
 
     /// <summary>
