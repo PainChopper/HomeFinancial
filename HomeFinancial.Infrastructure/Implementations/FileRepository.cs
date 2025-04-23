@@ -1,4 +1,3 @@
-using HomeFinancial.Application.Common;
 using HomeFinancial.Domain.Entities;
 using HomeFinancial.Domain.Repositories;
 using HomeFinancial.Infrastructure.Persistence;
@@ -10,7 +9,7 @@ namespace HomeFinancial.Infrastructure.Implementations;
 /// <summary>
 /// Репозиторий для работы с импортированными файлами
 /// </summary>
-public class FileRepository(ApplicationDbContext dbContext, ILogger<FileRepository> logger, IDateTimeProvider dateTimeProvider)
+public class FileRepository(ApplicationDbContext dbContext, ILogger<FileRepository> logger)
     : GenericGenericRepository<ImportedFile>(dbContext, logger), IFileRepository
 {
     /// <summary>
@@ -31,7 +30,6 @@ public class FileRepository(ApplicationDbContext dbContext, ILogger<FileReposito
     public override async Task<ImportedFile> CreateAsync(ImportedFile file, CancellationToken cancellationToken = default)
     {
         Logger.LogInformation("Attempting to add imported file: {FileName}", file.FileName);
-        file.ImportedAt = dateTimeProvider.UtcNow;
         return await base.CreateAsync(file, cancellationToken);
     }
 }

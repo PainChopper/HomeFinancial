@@ -3,6 +3,7 @@ using HomeFinancial.Infrastructure;
 using HomeFinancial.WebApi;
 using HomeFinancial.WebApi.Auth;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.EntityFrameworkCore;
 using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -43,6 +44,26 @@ if (!await app.Services.CheckDatabaseConnectionAsync())
 {
     Environment.Exit(1);
 }
+
+// Автоматическое применение миграций EF Core в режиме разработки
+if (app.Environment.IsDevelopment())
+{
+    using var scope = app.Services.CreateScope();
+    var db = scope.ServiceProvider.GetRequiredService<HomeFinancial.Infrastructure.Persistence.ApplicationDbContext>();
+    var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+    try
+    {
+        logger.LogInformation("Применение миграций базы данных...");
+        db.Database.Migrate();
+        logger.LogInformation("Миграции успешно применены.");
+    }
+    catch (Exception ex)
+    {
+        logger.LogCritical(ex, "Ошибка при применении миграций базы данных.");
+        throw; // Прерываем запуск, чтобы не работать на неконсистентной схеме
+    }
+}
+
 
 // Включаем Swagger только в режиме разработки
 if (app.Environment.IsDevelopment())

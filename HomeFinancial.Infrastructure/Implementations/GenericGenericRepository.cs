@@ -11,15 +11,15 @@ namespace HomeFinancial.Infrastructure.Implementations;
 /// </summary>
 public class GenericGenericRepository<T> : IGenericRepository<T> where T : class, IEntity
 {
-    protected readonly ApplicationDbContext _dbContext;
-    protected readonly ILogger<GenericGenericRepository<T>> Logger;
+    protected readonly ApplicationDbContext DbContext;
+    protected readonly ILogger Logger;
     protected readonly DbSet<T> DbSet;
 
     public GenericGenericRepository(ApplicationDbContext dbContext, ILogger<GenericGenericRepository<T>> logger)
     {
-        _dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
+        DbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
         Logger = logger ?? throw new ArgumentNullException(nameof(logger));
-        DbSet = _dbContext.Set<T>();
+        DbSet = DbContext.Set<T>();
     }
 
     public virtual async Task<List<T>> GetAllAsync(CancellationToken cancellationToken = default)
@@ -31,14 +31,14 @@ public class GenericGenericRepository<T> : IGenericRepository<T> where T : class
     public virtual async Task<T> CreateAsync(T entity, CancellationToken cancellationToken = default)
     {
         DbSet.Add(entity);
-        await _dbContext.SaveChangesAsync(cancellationToken);
+        await DbContext.SaveChangesAsync(cancellationToken);
         return entity;
     }
 
     public virtual async Task UpdateAsync(T entity, CancellationToken cancellationToken = default)
     {
         DbSet.Update(entity);
-        await _dbContext.SaveChangesAsync(cancellationToken);
+        await DbContext.SaveChangesAsync(cancellationToken);
     }
 
     public virtual async Task DeleteAsync(int id, CancellationToken cancellationToken = default)
@@ -47,7 +47,7 @@ public class GenericGenericRepository<T> : IGenericRepository<T> where T : class
         if (entity != null)
         {
             DbSet.Remove(entity);
-            await _dbContext.SaveChangesAsync(cancellationToken);
+            await DbContext.SaveChangesAsync(cancellationToken);
         }
     }
 }

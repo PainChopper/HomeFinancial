@@ -17,9 +17,7 @@ public class ApplicationDbContext : DbContext
     /// Импортированные файлы
     /// </summary>
     public DbSet<ImportedFile> ImportedFiles { get; set; } = null!;
-    public DbSet<IncomeTransaction> IncomeTransactions { get; set; } = null!;
-    public DbSet<ExpenseTransaction> ExpenseTransactions { get; set; } = null!;
-
+    public DbSet<BankTransaction> BankTransactions { get; set; } = null!;
     public DbSet<Category> Categories { get; set; } = null!;
 
     // Конфигурация моделей

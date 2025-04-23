@@ -9,9 +9,12 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddApplicationServices(this IServiceCollection services)
     {
-        services.AddScoped<IOfxParser, OfxParser.OfxParser>();
+        services.AddSingleton<IDateTimeProvider, SystemDateTimeProvider>();
+        services.AddSingleton<IOfxParser, OfxParser.OfxParser>();
         services.AddScoped<IImportOfxFileHandler, ImportOfxFileHandler>();
-        services.AddScoped<IDateTimeProvider, SystemDateTimeProvider>();
+        services.AddOptions<ImportSettings>()
+            .BindConfiguration("ImportSettings");
+        services.AddSingleton<FluentValidation.IValidator<OfxTransaction>, OfxTransactionValidator>();
         return services;
     }
 }

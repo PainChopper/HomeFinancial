@@ -49,6 +49,6 @@ public class CategoryRepository(ApplicationDbContext dbContext, ILogger<GenericG
     public async Task DeleteAsync(Category category, CancellationToken cancellationToken = default)
     {
         DbSet.Remove(category);
-        await _dbContext.SaveChangesAsync(cancellationToken);
+        await DbContext.SaveChangesAsync(cancellationToken);
     }
 }

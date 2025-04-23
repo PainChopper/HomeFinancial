@@ -5,26 +5,15 @@ namespace HomeFinancial.Domain.Repositories;
 /// <summary>
 /// Интерфейс репозитория для работы с банковскими транзакциями
 /// </summary>
-public interface ITransactionRepository : IGenericRepository<BankTransaction>
+public interface ITransactionRepository
 {
     /// <summary>
-    /// Проверяет, существует ли транзакция с указанным FITID
+    /// Создает диапазон транзакций
     /// </summary>
-    /// <param name="fitId">FITID транзакции</param>
-    /// <returns>true, если транзакция существует; иначе false</returns>
-    Task<bool> ExistsByFitIdAsync(string fitId);
+    /// <param name="transactions">Транзакции для создания</param>
+    /// <param name="cancellationToken">Токен отмены</param>
+    /// <returns>Количество успешно сохраненных транзакций</returns>
+    Task<int> CreateRangeAsync(IList<BankTransaction> transactions, CancellationToken cancellationToken = default);
     
-    /// <summary>
-    /// Получает транзакцию по FITID
-    /// </summary>
-    /// <param name="fitId">FITID транзакции</param>
-    /// <returns>Транзакция или null, если транзакция не найдена</returns>
-    Task<BankTransaction?> GetByFitIdAsync(string fitId);
-    
-    /// <summary>
-    /// Получает транзакции по категории
-    /// </summary>
-    /// <param name="categoryId">Идентификатор категории</param>
-    /// <returns>Список транзакций</returns>
-    Task<List<BankTransaction>> GetByCategoryIdAsync(int categoryId);
+    Task<int> BulkInsertCopyAsync(IList<BankTransaction> transactions, CancellationToken cancellationToken = default);
 }

@@ -30,12 +30,22 @@ public class BankTransaction : Entity
     /// <summary>
     /// Идентификатор категории
     /// </summary>
-    public int CategoryId { get; set; }
+    public int? CategoryId { get; set; }
 
     /// <summary>
     /// Категория транзакции
     /// </summary>
     public Category? Category { get; set; }
+
+    /// <summary>
+    /// Идентификатор импортированного файла
+    /// </summary>
+    public int ImportedFileId { get; set; }
+
+    /// <summary>
+    /// Импортированный файл
+    /// </summary>
+    public ImportedFile? ImportedFile { get; set; }
 
     // Публичный конструктор для EF Core и маппинга
     public BankTransaction() { }
@@ -48,7 +58,8 @@ public class BankTransaction : Entity
     /// <param name="amount">Сумма транзакции</param>
     /// <param name="description">Описание транзакции</param>
     /// <param name="categoryId">Идентификатор категории</param>
-    public BankTransaction(string fitId, DateTime date, decimal amount, string description, int categoryId)
+    /// <param name="importedFileId">Идентификатор импортированного файла</param>
+    public BankTransaction(string fitId, DateTime date, decimal amount, string description, int categoryId, int importedFileId)
     {
         if (string.IsNullOrWhiteSpace(fitId))
             throw new ArgumentException("FITID не может быть пустым", nameof(fitId));
@@ -61,6 +72,7 @@ public class BankTransaction : Entity
         Amount = amount;
         Description = description;
         CategoryId = categoryId;
+        ImportedFileId = importedFileId;
     }
 
     /// <summary>
@@ -72,7 +84,8 @@ public class BankTransaction : Entity
     /// <param name="amount">Сумма транзакции</param>
     /// <param name="description">Описание транзакции</param>
     /// <param name="categoryId">Идентификатор категории</param>
-    public BankTransaction(int id, string fitId, DateTime date, decimal amount, string description, int categoryId)
+    /// <param name="importedFileId">Идентификатор импортированного файла</param>
+    public BankTransaction(int id, string fitId, DateTime date, decimal amount, string description, int categoryId, int importedFileId)
     {
         Id = id;
         FitId = fitId;
@@ -80,30 +93,6 @@ public class BankTransaction : Entity
         Amount = amount;
         Description = description;
         CategoryId = categoryId;
-    }
-
-    /// <summary>
-    /// Изменяет категорию транзакции
-    /// </summary>
-    /// <param name="category">Новая категория</param>
-    public void UpdateCategory(Category category)
-    {
-        if (category == null)
-            throw new ArgumentNullException(nameof(category));
-
-        Category = category;
-        CategoryId = category.Id;
-    }
-
-    /// <summary>
-    /// Обновляет описание транзакции
-    /// </summary>
-    /// <param name="description">Новое описание</param>
-    public void UpdateDescription(string description)
-    {
-        if (string.IsNullOrWhiteSpace(description))
-            throw new ArgumentException("Описание не может быть пустым", nameof(description));
-
-        Description = description;
+        ImportedFileId = importedFileId;
     }
 }

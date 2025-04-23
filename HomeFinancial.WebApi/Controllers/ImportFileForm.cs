@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using System.ComponentModel.DataAnnotations;
 
 namespace HomeFinancial.WebApi.Controllers
 {
@@ -11,6 +12,8 @@ namespace HomeFinancial.WebApi.Controllers
         public required IFormFile File { get; set; }
 
         [FromForm(Name = "fileName")]
+        [Required(ErrorMessage = "Имя файла не может быть пустым")]
+        [MinLength(1, ErrorMessage = "Имя файла не может быть пустым")]
         public required string FileName { get; set; }
     }
 }

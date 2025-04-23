@@ -6,9 +6,9 @@ Content-Type: multipart/form-data; boundary=MyBoundary
 Content-Disposition: form-data; name="file"; filename="1.ofx"
 Content-Type: application/octet-stream
 
-< ./anonymized.ofx
+< ./real.ofx
 --MyBoundary
 Content-Disposition: form-data; name="fileName"
 
-тестовый_файл
+тестовый_файл2
 --MyBoundary--
