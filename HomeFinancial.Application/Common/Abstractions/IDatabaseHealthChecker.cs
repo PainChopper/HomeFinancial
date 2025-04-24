@@ -1,7 +1,6 @@
-namespace HomeFinancial.Application.Common.Abstractions
+namespace HomeFinancial.Application.Common.Abstractions;
+
+public interface IDatabaseHealthChecker
 {
-    public interface IDatabaseHealthChecker
-    {
-        Task<bool> CheckDatabaseHealthAsync(CancellationToken cancellationToken = default);
-    }
+    Task<bool> CheckDatabaseHealthAsync(CancellationToken cancellationToken = default);
 }

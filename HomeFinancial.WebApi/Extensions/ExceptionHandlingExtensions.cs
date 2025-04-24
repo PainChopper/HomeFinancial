@@ -1,7 +1,7 @@
-using System.Text.Json;
 using Microsoft.AspNetCore.Diagnostics;
+using Microsoft.AspNetCore.Mvc;
 
-namespace HomeFinancial.WebApi;
+namespace HomeFinancial.WebApi.Extensions;
 
 /// <summary>
 /// Методы расширения для глобальной обработки ошибок
@@ -18,19 +18,21 @@ public static class ExceptionHandlingExtensions
         {
             errorApp.Run(async context =>
             {
-                context.Response.StatusCode = 500;
-                context.Response.ContentType = "application/json";
+                context.Response.StatusCode = StatusCodes.Status500InternalServerError;
+                context.Response.ContentType = "application/problem+json";
 
                 var contextFeature = context.Features.Get<IExceptionHandlerFeature>();
                 if (contextFeature != null)
                 {
                     logger.LogError(contextFeature.Error, "Произошла необработанная ошибка.");
-                    var errorResponse = new
+                    var problem = new ProblemDetails
                     {
-                        context.Response.StatusCode,
-                        Message = "Внутренняя ошибка сервера."
+                        Status = StatusCodes.Status500InternalServerError,
+                        Title = "Внутренняя ошибка сервера.",
+                        Detail = contextFeature.Error.Message,
+                        Instance = context.Request.Path
                     };
-                    await context.Response.WriteAsync(JsonSerializer.Serialize(errorResponse));
+                    await context.Response.WriteAsJsonAsync(problem);
                 }
             });
         });

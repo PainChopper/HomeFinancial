@@ -1,6 +1,7 @@
 using HomeFinancial.Application.UseCases.ImportOfxFile;
 using HomeFinancial.Application.Common;
 using Microsoft.AspNetCore.Mvc;
+using FluentValidation;
 
 namespace HomeFinancial.WebApi.Controllers;
 
@@ -43,11 +44,15 @@ public class FilesController : ControllerBase
                 return Ok(response);
             return BadRequest(response);
         }
-        catch (Exception ex)
+        catch (ValidationException ex)
         {
-            // В случае исключения возвращаем единый формат
-            var error = new ApiResponse<ImportOfxFileResult>(false, null, $"Ошибка при импорте файла: {ex.Message}");
-            return StatusCode(500, error);
+            var error = new ApiResponse<ImportOfxFileResult>(false, null, ex.Message);
+            return BadRequest(error);
+        }
+        catch (InvalidOperationException ex)
+        {
+            var error = new ApiResponse<ImportOfxFileResult>(false, null, ex.Message);
+            return BadRequest(error);
         }
     }
 }
