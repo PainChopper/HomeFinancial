@@ -2,7 +2,7 @@ using HomeFinancial.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
-namespace HomeFinancial.Infrastructure.Persistence.Configurations;
+namespace HomeFinancial.Infrastructure.Configurations;
 
 public class BankTransactionConfiguration : IEntityTypeConfiguration<BankTransaction>
 {
@@ -13,6 +13,10 @@ public class BankTransactionConfiguration : IEntityTypeConfiguration<BankTransac
         builder.Property(t => t.Amount).IsRequired();
         builder.Property(t => t.Date).IsRequired();
         builder.Property(t => t.Description).IsRequired();
-        // builder.Property(t => t.CategoryId).IsRequired();
+        builder.Property(t => t.CategoryId).IsRequired();
+        builder.HasOne(t => t.Category)
+            .WithMany()
+            .HasForeignKey(t => t.CategoryId)
+            .OnDelete(DeleteBehavior.Restrict);
     }
 }

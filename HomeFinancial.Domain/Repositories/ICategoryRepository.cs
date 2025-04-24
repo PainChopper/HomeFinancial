@@ -21,6 +21,4 @@ public interface ICategoryRepository : IGenericRepository<Category>
     /// <param name="cancellationToken"></param>
     /// <returns>Существующая или новая категория</returns>
     Task<Category> GetOrCreateAsync(string name, CancellationToken cancellationToken);
-
-    Task DeleteAsync(Category category, CancellationToken cancellationToken);
 }

@@ -3,7 +3,7 @@ namespace HomeFinancial.Domain.Repositories;
 /// <summary>
 /// Результат пакетной вставки транзакций
 /// </summary>
-public struct BulkInsertResult
+public struct TransactionsInsertResult
 {
     /// <summary>
     /// Количество реально вставленных транзакций

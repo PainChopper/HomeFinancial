@@ -15,7 +15,7 @@ public class TransactionRepository(
     : ITransactionRepository
 {
     /// <inheritdoc/>
-    public async Task<BulkInsertResult> BulkInsertCopyAsync(IList<BankTransaction> transactions, CancellationToken cancellationToken)
+    public async Task<TransactionsInsertResult> BulkInsertCopyAsync(IList<BankTransaction> transactions, CancellationToken cancellationToken)
     {
         var existingFitIds = await GetExistingFitIds(transactions, cancellationToken);
 
@@ -32,7 +32,7 @@ public class TransactionRepository(
         if (newTransactions.Count == 0)
         {
             logger.LogInformation("Нет новых транзакций для вставки через COPY.");
-            return new BulkInsertResult { InsertedCount = 0, SkippedDuplicateCount = existingFitIds.Count };
+            return new TransactionsInsertResult { InsertedCount = 0, SkippedDuplicateCount = existingFitIds.Count };
         }
 
         var conn = (NpgsqlConnection)dbContext.Database.GetDbConnection();
@@ -61,7 +61,7 @@ public class TransactionRepository(
                 }
             }
             logger.LogInformation("COPY завершён. Вставлено {Count} транзакций.", newTransactions.Count);
-            return new BulkInsertResult { InsertedCount = newTransactions.Count, SkippedDuplicateCount = existingFitIds.Count };
+            return new TransactionsInsertResult { InsertedCount = newTransactions.Count, SkippedDuplicateCount = existingFitIds.Count };
         }
         catch (Exception ex)
         {

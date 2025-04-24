@@ -26,7 +26,7 @@ public class CategoryRepository(ApplicationDbContext dbContext, ILogger<GenericG
         var category = await GetByNameAsync(name);
         if (category != null)
             return category;
-        category = new Category(name);
+        category = new Category { Name = name };
         return await CreateAsync(category, cancellationToken);
     }
 
@@ -35,20 +35,11 @@ public class CategoryRepository(ApplicationDbContext dbContext, ILogger<GenericG
     /// </summary>
     public override async Task<Category> CreateAsync(Category category, CancellationToken cancellationToken = default)
     {
-        Logger.LogInformation("Attempting to create category: {CategoryName}", category.Name);
+        Logger.LogInformation("Попытка создать категорию: {CategoryName}", category.Name);
         var exist = await GetByNameAsync(category.Name);
         if (exist == null)
             return await base.CreateAsync(category, cancellationToken);
-        Logger.LogWarning("Category '{ExistingCategory}' already exists.", exist.Name);
-        throw new InvalidOperationException($"Category '{exist.Name}' already exists.");
-    }
-
-    /// <summary>
-    /// Удаляет категорию
-    /// </summary>
-    public async Task DeleteAsync(Category category, CancellationToken cancellationToken = default)
-    {
-        DbSet.Remove(category);
-        await DbContext.SaveChangesAsync(cancellationToken);
+        Logger.LogWarning("Категория '{ExistingCategory}' уже существует.", exist.Name);
+        throw new InvalidOperationException($"Категория '{exist.Name}' уже существует.");
     }
 }

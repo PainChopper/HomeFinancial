@@ -41,10 +41,8 @@ public class ImportOfxFileHandler : IImportOfxFileHandler
         _transactionValidator = transactionValidator ?? throw new ArgumentNullException(nameof(transactionValidator));
         _dateTimeProvider = dateTimeProvider ?? throw new ArgumentNullException(nameof(dateTimeProvider));
     }
-
-    /// <summary>
-    /// Импортирует OFX-файл
-    /// </summary>
+    
+    /// <inheritdoc />
     public async Task<ApiResponse<ImportOfxFileResult>> HandleAsync(ImportOfxFileCommand command, CancellationToken cancellationToken = default)
     {
         _logger.LogInformation("Импорт OFX-файла: {FileName}", command.FileName);
@@ -76,16 +74,19 @@ public class ImportOfxFileHandler : IImportOfxFileHandler
                 continue;
             }
 
-            var income = new BankTransaction()
+            // Определяем или создаём категорию
+            var category = await _categoryRepository.GetOrCreateAsync(t.Category!, cancellationToken);
+            var income = new BankTransaction
             {
-                ImportedFileId = fileId,
+                ImportedFile = importedFile,
                 FitId = t.TranId!,
-                Date = DateTime.SpecifyKind(t.TranDate!.Value, DateTimeKind.Utc),
+                Date = DateTime.SpecifyKind(t.TranDate!.Value,
+                    DateTimeKind.Utc),
                 Amount = t.Amount!.Value,
                 Description = t.Description!,
-                CategoryId = null // Категория будет назначена позже
+                Category = category
             };
-            
+
             batch.Add(income);
 
             if (batch.Count < _importSettings.BatchSize)
