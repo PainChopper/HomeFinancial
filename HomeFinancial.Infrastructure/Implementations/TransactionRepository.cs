@@ -14,52 +14,14 @@ public class TransactionRepository(
     ApplicationDbContext dbContext, ILogger<TransactionRepository> logger)
     : ITransactionRepository
 {
-    /// <summary>
-    /// Создает диапазон банковских транзакций, пропуская дубли по FITID
-    /// </summary>
-    /// <returns>Количество созданных транзакций</returns>
-    public async Task<int> CreateRangeAsync(IList<BankTransaction> transactions,
-        CancellationToken cancellationToken = default)
+    /// <inheritdoc/>
+    public async Task<BulkInsertResult> BulkInsertCopyAsync(IList<BankTransaction> transactions, CancellationToken cancellationToken)
     {
         var existingFitIds = await GetExistingFitIds(transactions, cancellationToken);
 
-        foreach (var duplicatedTran in transactions.Where(t => existingFitIds.Contains(t.FitId)))
+        foreach (var fitId in existingFitIds)
         {
-            logger.LogWarning( "Уже существует транзакция с FitId={FitId}", duplicatedTran.FitId);
-        } 
-        
-        // Оставляем только те транзакции, которых нет в базе
-        var newTransactions = transactions
-            .Where(t => !existingFitIds.Contains(t.FitId))
-            .ToList();
-
-        try
-        {
-            await dbContext.BankTransactions.AddRangeAsync(newTransactions, cancellationToken);
-            await dbContext.SaveChangesAsync(cancellationToken);
-        }
-        catch (Exception ex)
-        {
-            logger.LogError(ex, "Ошибка при добавлении транзакций с FitId={FitId}", string.Join(", ", newTransactions.Select(t => t.FitId)));
-            throw;
-        }
-        
-        return newTransactions.Count;
-    }
-
-    /// <summary>
-    /// Выполняет пакетную вставку банковских транзакций в базу данных с использованием команды COPY PostgreSQL.
-    /// </summary>
-    /// <param name="transactions">Список банковских транзакций для вставки.</param>
-    /// <param name="cancellationToken">Токен отмены для прерывания операции.</param>
-    /// <returns>Количество созданных транзакций</returns>
-    public async Task<int> BulkInsertCopyAsync(IList<BankTransaction> transactions, CancellationToken cancellationToken)
-    {
-        var existingFitIds = await GetExistingFitIds(transactions, cancellationToken);
-
-        foreach (var duplicatedTran in transactions.Where(t => existingFitIds.Contains(t.FitId)))
-        {
-            logger.LogWarning("Уже существует транзакция с FitId={FitId}", duplicatedTran.FitId);
+            logger.LogWarning("Уже существует транзакция с FitId={FitId}", fitId);
         }
 
         // Оставляем только те транзакции, которых нет в базе
@@ -70,7 +32,7 @@ public class TransactionRepository(
         if (newTransactions.Count == 0)
         {
             logger.LogInformation("Нет новых транзакций для вставки через COPY.");
-            return 0;
+            return new BulkInsertResult { InsertedCount = 0, SkippedDuplicateCount = existingFitIds.Count };
         }
 
         var conn = (NpgsqlConnection)dbContext.Database.GetDbConnection();
@@ -99,7 +61,7 @@ public class TransactionRepository(
                 }
             }
             logger.LogInformation("COPY завершён. Вставлено {Count} транзакций.", newTransactions.Count);
-            return newTransactions.Count;
+            return new BulkInsertResult { InsertedCount = newTransactions.Count, SkippedDuplicateCount = existingFitIds.Count };
         }
         catch (Exception ex)
         {

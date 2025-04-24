@@ -8,12 +8,10 @@ namespace HomeFinancial.Domain.Repositories;
 public interface ITransactionRepository
 {
     /// <summary>
-    /// Создает диапазон транзакций
+    /// Выполняет пакетную вставку банковских транзакций в базу данных с использованием команды COPY PostgreSQL.
     /// </summary>
-    /// <param name="transactions">Транзакции для создания</param>
-    /// <param name="cancellationToken">Токен отмены</param>
-    /// <returns>Количество успешно сохраненных транзакций</returns>
-    Task<int> CreateRangeAsync(IList<BankTransaction> transactions, CancellationToken cancellationToken = default);
-    
-    Task<int> BulkInsertCopyAsync(IList<BankTransaction> transactions, CancellationToken cancellationToken = default);
+    /// <param name="transactions">Список банковских транзакций для вставки.</param>
+    /// <param name="cancellationToken">Токен отмены для прерывания операции.</param>
+    /// <returns>Количество созданных транзакций</returns>
+    Task<BulkInsertResult> BulkInsertCopyAsync(IList<BankTransaction> transactions, CancellationToken cancellationToken = default);
 }

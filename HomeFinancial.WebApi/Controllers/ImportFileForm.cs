@@ -9,6 +9,7 @@ namespace HomeFinancial.WebApi.Controllers
     public class ImportFileForm
     {
         [FromForm(Name = "file")]
+        [Required(ErrorMessage = "Файл обязателен")]
         public required IFormFile File { get; set; }
 
         [FromForm(Name = "fileName")]

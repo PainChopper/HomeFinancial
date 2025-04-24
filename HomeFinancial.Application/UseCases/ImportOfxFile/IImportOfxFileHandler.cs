@@ -1,3 +1,5 @@
+using HomeFinancial.Application.Common;
+
 namespace HomeFinancial.Application.UseCases.ImportOfxFile;
 
 /// <summary>
@@ -5,5 +7,5 @@ namespace HomeFinancial.Application.UseCases.ImportOfxFile;
 /// </summary>
 public interface IImportOfxFileHandler
 {
-    Task HandleAsync(ImportOfxFileCommand command, CancellationToken cancellationToken = default);
+    Task<ApiResponse<ImportOfxFileResult>> HandleAsync(ImportOfxFileCommand command, CancellationToken cancellationToken = default);
 }

@@ -8,5 +8,5 @@ public class ImportSettings
     /// <summary>
     /// Размер пакета для обработки транзакций
     /// </summary>
-    public int BatchSize { get; set; } = 100;
+    public int BatchSize { get; } = 100;
 }
