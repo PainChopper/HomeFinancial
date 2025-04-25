@@ -1,4 +1,6 @@
-namespace HomeFinancial.Application.Common;
+using HomeFinancial.Application.Common;
+
+namespace HomeFinancial.Infrastructure.Implementations;
 
 /// <summary>
 /// Провайдер, возвращающий системное время

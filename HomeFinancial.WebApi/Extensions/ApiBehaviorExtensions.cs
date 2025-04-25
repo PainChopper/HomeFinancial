@@ -3,7 +3,6 @@ namespace HomeFinancial.WebApi.Extensions;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
 using System.Linq;
-using System.Collections.Generic;
 using HomeFinancial.Application.Common;
 
 /// <summary>

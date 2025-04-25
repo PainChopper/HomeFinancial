@@ -1,9 +1,7 @@
-using HomeFinancial.Application.Common.Abstractions;
+using HomeFinancial.Application.Common;
 using HomeFinancial.Domain.Repositories;
-using HomeFinancial.Infrastructure.Database;
 using HomeFinancial.Infrastructure.Implementations;
 using HomeFinancial.Infrastructure.Persistence;
-using LazyCache;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -17,14 +15,14 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
+        services.AddSingleton<IDateTimeProvider, SystemDateTimeProvider>();
+        
         var connectionString = configuration.GetConnectionString("PostgresConnection");
         services.AddDbContext<ApplicationDbContext>(options =>
             options.UseNpgsql(connectionString)
                 .UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking)
                 .UseSnakeCaseNamingConvention());
     
-        services.AddScoped<IDatabaseHealthChecker, DatabaseHealthChecker>();
-        
         // Регистрация репозиториев
         services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
         services.AddScoped<ICategoryRepository, CategoryRepository>();

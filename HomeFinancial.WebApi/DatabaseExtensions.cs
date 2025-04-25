@@ -1,11 +1,11 @@
-using HomeFinancial.Application.Common.Abstractions;
+using HomeFinancial.Infrastructure.Persistence;
 
 namespace HomeFinancial.WebApi;
 
 public static class DatabaseExtensions
 {
     /// <summary>
-    /// Проверяет соединение с базой данных через IDatabaseHealthChecker.
+    /// Проверяет соединение с базой данных через ApplicationDbContext.
     /// </summary>
     /// <param name="services">Провайдер сервисов приложения</param>
     public static async Task<bool> CheckDatabaseConnectionAsync(this IServiceProvider services)
@@ -13,11 +13,11 @@ public static class DatabaseExtensions
         var logger = services.GetRequiredService<ILogger<Program>>();
         using var scope = services.CreateScope();
         var provider = scope.ServiceProvider;
-        var dbChecker = provider.GetRequiredService<IDatabaseHealthChecker>();
+        var dbContext = provider.GetRequiredService<ApplicationDbContext>();
 
         logger.LogInformation("Проверка соединения с базой данных.");
 
-        if (await dbChecker.CheckDatabaseHealthAsync())
+        if (await dbContext.Database.CanConnectAsync())
             return true;
 
         logger.LogCritical("Не удалось установить соединение с базой данных. Проверьте строку подключения и доступность сервера БД.");

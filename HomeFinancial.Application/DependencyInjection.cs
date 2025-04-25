@@ -9,7 +9,6 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddApplicationServices(this IServiceCollection services)
     {
-        services.AddSingleton<IDateTimeProvider, SystemDateTimeProvider>();
         services.AddSingleton<IOfxParser, OfxParser.OfxParser>();
         services.AddScoped<IImportOfxFileHandler, ImportOfxFileHandler>();
         services.AddOptions<ImportSettings>()
