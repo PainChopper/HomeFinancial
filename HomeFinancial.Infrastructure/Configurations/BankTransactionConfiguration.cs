@@ -1,5 +1,4 @@
 using HomeFinancial.Domain.Entities;
-using HomeFinancial.Infrastructure.Extensions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -10,7 +9,9 @@ public class BankTransactionConfiguration : IEntityTypeConfiguration<BankTransac
     public void Configure(EntityTypeBuilder<BankTransaction> builder)
     {
         builder.HasKey(t => t.Id);
-        builder.SetAllPropertiesRequired();
+        builder.Metadata.GetProperties()
+            .ToList()
+            .ForEach(p => p.IsNullable = false);
         builder.HasOne(t => t.Category)
             .WithMany()
             .HasForeignKey(t => t.CategoryId)
