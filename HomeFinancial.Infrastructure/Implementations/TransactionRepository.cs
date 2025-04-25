@@ -37,7 +37,7 @@ public class TransactionRepository(
             .Where(t => !existingFitIds.Contains(t.FitId))
             .ToList();
 
-        if (!newTransactions.Any())
+        if (newTransactions.Count == 0)
         {
             logger.LogInformation("Новых транзакций для вставки через COPY не найдено.");
             return (0, existingFitIds.Count);

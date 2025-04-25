@@ -80,8 +80,7 @@ public class ImportOfxFileHandler : IImportOfxFileHandler
             {
                 ImportedFile = importedFile,
                 FitId = t.TranId!,
-                Date = DateTime.SpecifyKind(t.TranDate!.Value,
-                    DateTimeKind.Utc),
+                Date = DateTime.SpecifyKind(t.TranDate!.Value, DateTimeKind.Utc),
                 Amount = t.Amount!.Value,
                 Description = t.Description!,
                 Category = category

@@ -30,7 +30,6 @@ public static class DependencyInjection
         services.AddScoped<ICategoryRepository, CategoryRepository>();
         services.AddScoped<ITransactionRepository, TransactionRepository>();
         services.AddScoped<IFileRepository, FileRepository>();
-        services.AddSingleton<CategoryCache>();
 
         return services;
     }
