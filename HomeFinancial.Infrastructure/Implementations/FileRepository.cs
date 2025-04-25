@@ -10,7 +10,7 @@ namespace HomeFinancial.Infrastructure.Implementations;
 /// Репозиторий для работы с импортированными файлами
 /// </summary>
 public class FileRepository(ApplicationDbContext dbContext, ILogger<FileRepository> logger)
-    : GenericGenericRepository<ImportedFile>(dbContext, logger), IFileRepository
+    : GenericRepository<ImportedFile>(dbContext, logger), IFileRepository
 {
     /// <summary>
     /// Проверяет, существует ли файл с указанным именем в базе данных

@@ -3,6 +3,7 @@ using HomeFinancial.Domain.Repositories;
 using HomeFinancial.Infrastructure.Database;
 using HomeFinancial.Infrastructure.Implementations;
 using HomeFinancial.Infrastructure.Persistence;
+using LazyCache;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -25,10 +26,11 @@ public static class DependencyInjection
         services.AddScoped<IDatabaseHealthChecker, DatabaseHealthChecker>();
         
         // Регистрация репозиториев
-        services.AddScoped(typeof(IGenericRepository<>), typeof(GenericGenericRepository<>));
+        services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
         services.AddScoped<ICategoryRepository, CategoryRepository>();
         services.AddScoped<ITransactionRepository, TransactionRepository>();
         services.AddScoped<IFileRepository, FileRepository>();
+        services.AddSingleton<CategoryCache>();
 
         return services;
     }

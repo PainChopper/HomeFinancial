@@ -9,13 +9,13 @@ namespace HomeFinancial.Infrastructure.Implementations;
 /// <summary>
 /// Базовая реализация общего репозитория
 /// </summary>
-public class GenericGenericRepository<T> : IGenericRepository<T> where T : class, IEntity
+public class GenericRepository<T> : IGenericRepository<T> where T : class, IEntity
 {
     protected readonly ApplicationDbContext DbContext;
     protected readonly ILogger Logger;
     protected readonly DbSet<T> DbSet;
 
-    public GenericGenericRepository(ApplicationDbContext dbContext, ILogger<GenericGenericRepository<T>> logger)
+    public GenericRepository(ApplicationDbContext dbContext, ILogger<GenericRepository<T>> logger)
     {
         DbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
         Logger = logger ?? throw new ArgumentNullException(nameof(logger));

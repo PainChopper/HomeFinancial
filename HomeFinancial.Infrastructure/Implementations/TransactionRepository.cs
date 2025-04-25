@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using HomeFinancial.Domain.Entities;
 using HomeFinancial.Domain.Repositories;
 using HomeFinancial.Infrastructure.Persistence;
@@ -15,86 +16,95 @@ public class TransactionRepository(
     : ITransactionRepository
 {
     /// <inheritdoc/>
-    public async Task<TransactionsInsertResult> BulkInsertCopyAsync(IList<BankTransaction> transactions, CancellationToken cancellationToken)
+    public async Task<(int InsertedCount, int SkippedDuplicateCount)> BulkInsertCopyAsync(
+        IList<BankTransaction> transactions,
+        CancellationToken cancellationToken)
     {
-        var existingFitIds = await GetExistingFitIds(transactions, cancellationToken);
+        // Проверяем, что список транзакций не null
+        ArgumentNullException.ThrowIfNull(transactions);
 
+        // Получаем множество существующих FitId (для O(1)-проверок)
+        var existingFitIds = await GetExistingFitIdsAsync(transactions, cancellationToken);
+
+        // Логируем все найденные дубликаты
         foreach (var fitId in existingFitIds)
         {
-            logger.LogWarning("Уже существует транзакция с FitId={FitId}", fitId);
+            logger.LogWarning("Транзакция с FitId={FitId} уже существует", fitId);
         }
 
-        // Оставляем только те транзакции, которых нет в базе
+        // Оставляем только новые транзакции
         var newTransactions = transactions
             .Where(t => !existingFitIds.Contains(t.FitId))
             .ToList();
 
-        if (newTransactions.Count == 0)
+        if (!newTransactions.Any())
         {
-            logger.LogInformation("Нет новых транзакций для вставки через COPY.");
-            return new TransactionsInsertResult { InsertedCount = 0, SkippedDuplicateCount = existingFitIds.Count };
+            logger.LogInformation("Новых транзакций для вставки через COPY не найдено.");
+            return (0, existingFitIds.Count);
         }
 
-        var conn = (NpgsqlConnection)dbContext.Database.GetDbConnection();
-        var wasClosed = conn.State == System.Data.ConnectionState.Closed;
-        if (wasClosed)
-            await conn.OpenAsync(cancellationToken);
+        // Открываем соединение через EF Core
+        var conn = (NpgsqlConnection) dbContext.Database.GetDbConnection();
+        await dbContext.Database.OpenConnectionAsync(cancellationToken);
 
         try
         {
-            // COPY для вашей схемы: bank_transactions (imported_file_id, fit_id, date, amount, description, category_id)
-            await using (var writer = await conn.BeginTextImportAsync(
-                             "COPY bank_transactions (imported_file_id, fit_id, date, amount, description, category_id) FROM STDIN (FORMAT CSV)",
-                             cancellationToken))
+            // Начинаем бинарный COPY для максимальной скорости
+            await using var writer = await conn.BeginBinaryImportAsync(
+                "COPY bank_transactions " +
+                "(imported_file_id, fit_id, date, amount, description, category_id) " +
+                "FROM STDIN (FORMAT BINARY)",
+                cancellationToken);
+
+            foreach (var t in newTransactions)
             {
-                foreach (var t in newTransactions)
-                {
-                    var line = string.Join(",",
-                        t.ImportedFileId,
-                        EscapeCsv(t.FitId),
-                        t.Date.ToString("yyyy-MM-ddTHH:mm:ssZ"),
-                        t.Amount.ToString(System.Globalization.CultureInfo.InvariantCulture),
-                        EscapeCsv(t.Description),
-                        t.CategoryId?.ToString() ?? ""
-                    ) + "\n";
-                    await writer.WriteAsync(line);
-                }
+                await writer.StartRowAsync(cancellationToken);
+                await writer.WriteAsync(t.ImportedFileId, NpgsqlTypes.NpgsqlDbType.Integer, cancellationToken);
+                await writer.WriteAsync(t.FitId,       NpgsqlTypes.NpgsqlDbType.Text, cancellationToken);
+                await writer.WriteAsync(t.Date.ToUniversalTime(), NpgsqlTypes.NpgsqlDbType.TimestampTz, cancellationToken);
+                await writer.WriteAsync(t.Amount,      NpgsqlTypes.NpgsqlDbType.Numeric, cancellationToken);
+                await writer.WriteAsync(t.Description, NpgsqlTypes.NpgsqlDbType.Text, cancellationToken);
+                await writer.WriteAsync(t.CategoryId,  NpgsqlTypes.NpgsqlDbType.Integer, cancellationToken);
             }
-            logger.LogInformation("COPY завершён. Вставлено {Count} транзакций.", newTransactions.Count);
-            return new TransactionsInsertResult { InsertedCount = newTransactions.Count, SkippedDuplicateCount = existingFitIds.Count };
+
+            await writer.CompleteAsync(cancellationToken);
+
+            logger.LogInformation("Бинарный COPY завершён. Вставлено {Count} транзакций.", newTransactions.Count);
+
+            return (newTransactions.Count, existingFitIds.Count);
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Ошибка при выполнении COPY для BulkInsertCopyAsync");
+            logger.LogError(
+                ex,
+                "Ошибка при бинарном COPY в BulkInsertCopyAsync");
             throw;
         }
         finally
         {
-            if (wasClosed)
-                await conn.CloseAsync();
+            // Всегда закрываем соединение
+            await dbContext.Database.CloseConnectionAsync();
         }
     }
 
 
-    // Для экранирования строк в CSV
-    private static string EscapeCsv(string value) =>
-        string.IsNullOrEmpty(value) ? "" : $"\"{value.Replace("\"", "\"\"")}\"";
-   
+
+
     /// <summary>
     /// Получает список существующих FIT-ID из базы, сравнивая с переданным списком транзакций
     /// </summary>
     /// <param name="transactions">Список транзакций, для которых нужно найти существующие FIT-ID</param>
     /// <param name="cancellationToken">Токен отмены операции</param>
-    /// <returns>Список существующих FIT-ID</returns>
-    private async Task<List<string>> GetExistingFitIds(IList<BankTransaction> transactions, CancellationToken cancellationToken)
+    /// <returns>Сет существующих FIT-ID</returns>
+    private async Task<HashSet<string>> GetExistingFitIdsAsync(IList<BankTransaction> transactions, CancellationToken cancellationToken)
     {
-        var fitIds = transactions.Select(t => t.FitId).ToList();
+        var fitIds = 
+            transactions.Select(t => t.FitId)
+                .ToImmutableHashSet();
 
-        // Получаем список существующих FIT-ID одним запросом
-        var existingFitIds = await dbContext.BankTransactions
+        return await dbContext.BankTransactions
             .Where(t => fitIds.Contains(t.FitId))
             .Select(t => t.FitId)
-            .ToListAsync(cancellationToken);
-        return existingFitIds;
+            .ToHashSetAsync(cancellationToken: cancellationToken);
     }
 }
