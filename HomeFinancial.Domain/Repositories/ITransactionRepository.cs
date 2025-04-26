@@ -13,5 +13,5 @@ public interface ITransactionRepository
     /// <param name="transactions">Список банковских транзакций для вставки.</param>
     /// <param name="cancellationToken">Токен отмены для прерывания операции.</param>
     /// <returns>Кортеж: (количество созданных транзакций, количество пропущенных дубликатов)</returns>
-    Task<(int InsertedCount, int SkippedDuplicateCount)> BulkInsertCopyAsync(IList<BankTransaction> transactions, CancellationToken cancellationToken = default);
+    Task<(int InsertedCount, int SkippedDuplicateCount)> BulkInsertCopyAsync(IList<BulkTransactionDto> transactions, CancellationToken cancellationToken = default);
 }

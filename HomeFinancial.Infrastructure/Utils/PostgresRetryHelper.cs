@@ -1,72 +1,108 @@
-﻿using Npgsql;
+using System.Diagnostics;
+using Npgsql;
 using Polly;
+using Polly.Contrib.WaitAndRetry;
+using Polly.Retry;
+using Polly.Utilities;
 
 namespace HomeFinancial.Infrastructure.Utils;
 
-public static class PostgresRetryHelper
+public static class RetryPolicyHelper
 {
-     // Метод, выполняющий заданную операцию с повторными попытками при определённых ошибках PostgreSQL.
-    public static async Task<T> ExecuteWithRetryAsync<T>(
-        Func<CancellationToken, Task<T>> operation, 
-        CancellationToken cancellationToken)
+    /// <summary>
+    /// Выполняет заданную операцию с повторными попытками при некоторых ошибках PostgreSQL.
+    /// </summary>
+    /// <typeparam name="T">Тип результата операции.</typeparam>
+    /// <param name="operation">Асинхронная операция, которую нужно выполнить с повторами.</param>
+    /// <returns>Результат успешного выполнения операции.</returns>
+    /// <exception cref="RetryLimitExceededException">
+    /// Выбрасывается, если операция не завершилась успешно из-за превышения лимита попыток или времени. 
+    /// В исключение включается список всех ошибок, возникших при повторных попытках.
+    /// </exception>
+    public static async Task<T> RetryAsync<T>(Func<Task<T>> operation)
     {
-        // Политика повторов для транзиентных ошибок (сериализация, дедлок, проблемы соединения).
-        var retryPolicyTransient = Policy
+        ArgumentNullException.ThrowIfNull(operation, nameof(operation));
+
+        var exceptions = new List<Exception>();
+        // Таймер для отслеживания общего времени выполнения всех попыток
+        var stopwatch = Stopwatch.StartNew();
+
+        // Политика повторов для транзиентных ошибок (ошибки сериализации, дедлоки, ошибки соединения)
+        var transientErrorsPolicy = Policy
             .Handle<PostgresException>(ex =>
+                ex.SqlState == "40001"    // ошибка сериализации транзакции (serialization_failure)
+                || ex.SqlState == "40P01" // дедлок (deadlock_detected)
+                || (ex.SqlState?.StartsWith("08") ?? false) // сбой соединения (class 08 - Connection Exception)
+            ).WaitAndRetryAsync(
+                sleepDurations: Backoff.DecorrelatedJitterBackoffV2(medianFirstRetryDelay: TimeSpan.FromMilliseconds(200), retryCount: 5),
+                onRetry: (exception, delay, retryAttempt, context) =>
+                {
+                    // Логируем информацию о неудачной попытке (на русском)
+                    Debug.WriteLine($"Попытка #{retryAttempt} завершилась ошибкой SQLSTATE={ (exception as PostgresException)?.SqlState }: {exception.Message}. Повтор через {delay}.");
+                    exceptions.Add(exception);
+                    // Проверяем, не вышли ли за пределы 30 секунд общего времени
+                    if (stopwatch.Elapsed >= TimeSpan.FromSeconds(30))
+                    {
+                        throw new OperationCanceledException("Превышено общее время выполнения попыток");
+                    }
+                }
+            );
+
+        // Политика одного повтора при отмене запроса (SQLSTATE 57014)
+        var cancellationPolicy = Policy
+            .Handle<PostgresException>(ex => ex.SqlState == "57014")  // операция отменена (query_canceled)
+            .WaitAndRetryAsync(
+                retryCount: 1,
+                sleepDurationProvider: _ => TimeSpan.FromSeconds(5),   // повтор через 5 секунд
+                onRetry: (exception, delay, retryAttempt, context) =>
+                {
+                    Debug.WriteLine($"Запрос был отменён (SQLSTATE 57014). Повторная попытка через {delay}.");
+                    exceptions.Add(exception);
+                    if (stopwatch.Elapsed >= TimeSpan.FromSeconds(30))
+                    {
+                        throw new OperationCanceledException("Превышено общее время выполнения попыток");
+                    }
+                }
+            );
+
+        // Комбинируем политики: сначала обрабатывается отмена запроса, затем транзиентные ошибки
+        var combinedPolicy = Policy.WrapAsync(cancellationPolicy, transientErrorsPolicy);
+
+        T result;
+        try
+        {
+            // Выполняем операцию внутри комбинированной политики повторов
+            result = await combinedPolicy.ExecuteAsync(operation);
+        }
+        catch (OperationCanceledException)
+        {
+            // Превышено общее время выполнения всех попыток
+            throw new RetryLimitExceededException("Превышено максимальное время выполнения операции (с учётом повторов).", exceptions);
+        }
+        catch (Exception ex)
+        {
+            // Операция окончательно не удалась после всех повторов
+            exceptions.Add(ex);
+            if (ex is PostgresException)
             {
-                // Определяем, подходит ли ошибка под наши критерии:
-                var sqlState = ex.SqlState;
-                return sqlState == "40001"        // ошибка сериализации транзакции
-                    || sqlState == "40P01"        // дедлок
-                    || (sqlState?.StartsWith("08") ?? false); // сбой соединения (08XXX)
-            })
-            .WaitAndRetryAsync(
-                retryCount: 5,   // до 5 попыток
-                sleepDurationProvider: attempt =>
-                {
-                    // Экспоненциальная задержка с джиттером.
-                    // Например: 1^2, 2^2, 4^2,... секунд + случайный миллисекундный разброс.
-                    var baseDelay = TimeSpan.FromSeconds(Math.Pow(2, attempt));
-                    var jitter = TimeSpan.FromMilliseconds(new Random().Next(0, 100));
-                    return baseDelay + jitter;
-                },
-                onRetry: (exception, delay, attempt, context) =>
-                {
-                    // Логируем информацию о повторной попытке (на русском):
-                    if (exception is PostgresException pex)
-                    {
-                        Console.WriteLine(
-                            $"Предупреждение: ошибка SQLSTATE={pex.SqlState} ({pex.Message}). " + 
-                            $"Попытка повторения {attempt}-я из 5, следующая через {delay.TotalSeconds:F1} с.");
-                    }
-                    else
-                    {
-                        Console.WriteLine(
-                            $"Предупреждение: исключение {exception.GetType().Name}: {exception.Message}. " + 
-                            $"Попытка повторения {attempt}-я из 5, следующая через {delay.TotalSeconds:F1} с.");
-                    }
-                });
+                throw new RetryLimitExceededException("Превышено максимальное количество попыток выполнения операции.", exceptions);
+            }
+            throw; // Пробросить неожиданные исключения (не связанные с PostgreSQL) без обёртки
+        }
 
-        // Политика повторов для таймаута/отмены запроса (57014) – 1 дополнительная попытка через 5 секунд.
-        var retryPolicyTimeout = Policy
-            .Handle<PostgresException>(ex => ex.SqlState == "57014")
-            .WaitAndRetryAsync(
-                retryCount: 1,   // максимум 1 повтор
-                sleepDurationProvider: attempt => TimeSpan.FromSeconds(5),
-                onRetry: (exception, delay, attempt, context) =>
-                {
-                    // Логируем информацию о повторе после таймаута (на русском):
-                    Console.WriteLine("Запрос отменён или прерван (SQLSTATE 57014). " +
-                                      "Повторная попытка через 5 секунд...");
-                });
-
-        // Объединяем политики через PolicyWrap: первой (внешней) идёт политика для таймаута, 
-        // а внутренняя – для остальных транзиентных ошибок.
-        var retryPolicyWrap = Policy.WrapAsync(retryPolicyTimeout, retryPolicyTransient);
-
-        // Выполнение операции с применением комбинированной политики.
-        // Polly самостоятельно вызовет делегат повторно при перехваченных ошибках.
-        return await retryPolicyWrap.ExecuteAsync(ct => operation(ct), cancellationToken);
+        return result;
     }
-
 }
+
+// Кастомное исключение, содержащее информацию о всех ошибках в ходе повторов
+public class RetryLimitExceededException : AggregateException
+{
+    /// <summary>Сообщение об ошибке и список внутренних исключений при повторных попытках.</summary>
+    public RetryLimitExceededException(string message, IEnumerable<Exception> innerExceptions)
+        : base(message, innerExceptions)
+    {
+    }
+}
+
+// Пример использования метода RetryAsync:
+// var categoryId = await RetryPolicyHelper.RetryAsync(() => GetOrCreateCategoryIdAsync(categoryName));

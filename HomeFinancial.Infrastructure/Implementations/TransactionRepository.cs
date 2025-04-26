@@ -17,10 +17,10 @@ public class TransactionRepository(
 {
     /// <inheritdoc/>
     public async Task<(int InsertedCount, int SkippedDuplicateCount)> BulkInsertCopyAsync(
-        IList<BankTransaction> transactions,
+        IList<BulkTransactionDto> transactions,
         CancellationToken cancellationToken)
     {
-        // Проверяем, что список транзакций не null
+        // Проверяем, что список DTO не null
         ArgumentNullException.ThrowIfNull(transactions);
 
         // Получаем множество существующих FitId (для O(1)-проверок)
@@ -32,12 +32,12 @@ public class TransactionRepository(
             logger.LogWarning("Транзакция с FitId={FitId} уже существует", fitId);
         }
 
-        // Оставляем только новые транзакции
-        var newTransactions = transactions
+        // Оставляем только новые DTO
+        var newItems = transactions
             .Where(t => !existingFitIds.Contains(t.FitId))
             .ToList();
 
-        if (newTransactions.Count == 0)
+        if (newItems.Count == 0)
         {
             logger.LogInformation("Новых транзакций для вставки через COPY не найдено.");
             return (0, existingFitIds.Count);
@@ -56,7 +56,7 @@ public class TransactionRepository(
                 "FROM STDIN (FORMAT BINARY)",
                 cancellationToken);
 
-            foreach (var t in newTransactions)
+            foreach (var t in newItems)
             {
                 await writer.StartRowAsync(cancellationToken);
                 await writer.WriteAsync(t.ImportedFileId, NpgsqlTypes.NpgsqlDbType.Integer, cancellationToken);
@@ -69,9 +69,9 @@ public class TransactionRepository(
 
             await writer.CompleteAsync(cancellationToken);
 
-            logger.LogInformation("Бинарный COPY завершён. Вставлено {Count} транзакций.", newTransactions.Count);
+            logger.LogInformation("Бинарный COPY завершён. Вставлено {Count} транзакций.", newItems.Count);
 
-            return (newTransactions.Count, existingFitIds.Count);
+            return (newItems.Count, existingFitIds.Count);
         }
         catch (Exception ex)
         {
@@ -87,20 +87,15 @@ public class TransactionRepository(
         }
     }
 
-
-
-
     /// <summary>
-    /// Получает список существующих FIT-ID из базы, сравнивая с переданным списком транзакций
+    /// Получает список существующих FIT-ID из базы, сравнивая с переданным списком DTO
     /// </summary>
-    /// <param name="transactions">Список транзакций, для которых нужно найти существующие FIT-ID</param>
+    /// <param name="transactions">Список DTO, для которых нужно найти существующие FIT-ID</param>
     /// <param name="cancellationToken">Токен отмены операции</param>
     /// <returns>Сет существующих FIT-ID</returns>
-    private async Task<HashSet<string>> GetExistingFitIdsAsync(IList<BankTransaction> transactions, CancellationToken cancellationToken)
+    private async Task<HashSet<string>> GetExistingFitIdsAsync(IList<BulkTransactionDto> transactions, CancellationToken cancellationToken)
     {
-        var fitIds = 
-            transactions.Select(t => t.FitId)
-                .ToImmutableHashSet();
+        var fitIds = transactions.Select(t => t.FitId).ToImmutableHashSet();
 
         return await dbContext.BankTransactions
             .Where(t => fitIds.Contains(t.FitId))

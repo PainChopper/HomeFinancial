@@ -12,8 +12,7 @@ public static class DatabaseExtensions
     {
         var logger = services.GetRequiredService<ILogger<Program>>();
         using var scope = services.CreateScope();
-        var provider = scope.ServiceProvider;
-        var dbContext = provider.GetRequiredService<ApplicationDbContext>();
+        var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
 
         logger.LogInformation("Проверка соединения с базой данных.");
 

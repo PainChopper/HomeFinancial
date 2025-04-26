@@ -50,8 +50,8 @@ public class ImportOfxFileHandler : IImportOfxFileHandler
         var importedFile = await CreateFile(command, cancellationToken);
         var fileId = importedFile.Id;
 
-        // Пакет транзакций на запись
-        var batch = new List<BankTransaction>(_importSettings.BatchSize);
+        // Пакет DTO для пакетной вставки
+        var batch = new List<BulkTransactionDto>(_importSettings.BatchSize);
 
         var totalCount = 0;
         var importedCount = 0;
@@ -74,19 +74,18 @@ public class ImportOfxFileHandler : IImportOfxFileHandler
                 continue;
             }
 
-            // Определяем или создаём категорию
+            // Определяем или создаём категорию и формируем DTO
             var category = await _categoryRepository.GetOrCreateAsync(t.Category!, cancellationToken);
-            var income = new BankTransaction
-            {
-                ImportedFile = importedFile,
-                FitId = t.TranId!,
-                Date = DateTime.SpecifyKind(t.TranDate!.Value, DateTimeKind.Utc),
-                Amount = t.Amount!.Value,
-                Description = t.Description!,
-                Category = category
-            };
+            var dto = new BulkTransactionDto(
+                ImportedFileId: fileId,
+                FitId: t.TranId!,
+                Date: DateTime.SpecifyKind(t.TranDate!.Value, DateTimeKind.Utc),
+                Amount: t.Amount!.Value,
+                Description: t.Description!,
+                CategoryId: category.Id
+            );
 
-            batch.Add(income);
+            batch.Add(dto);
 
             if (batch.Count < _importSettings.BatchSize)
             {
