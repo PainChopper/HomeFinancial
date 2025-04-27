@@ -3,6 +3,8 @@ using HomeFinancial.Domain.Entities;
 using HomeFinancial.Domain.Repositories;
 using HomeFinancial.OfxParser;
 using FluentValidation;
+using HomeFinancial.Application.Dtos;
+using HomeFinancial.Application.Interfaces;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
@@ -14,32 +16,32 @@ namespace HomeFinancial.Application.UseCases.ImportOfxFile;
 public class ImportOfxFileHandler : IImportOfxFileHandler
 {
     private readonly IOfxParser _parser;
-    private readonly ITransactionRepository _transactionRepository;
     private readonly IFileRepository _fileRepository;
     private readonly ICategoryRepository _categoryRepository;
     private readonly ILogger _logger;
     private readonly ImportSettings _importSettings;
     private readonly IValidator<OfxTransaction> _transactionValidator;
     private readonly IDateTimeProvider _dateTimeProvider;
+    private readonly ITransactionInserter _transactionInserter;
 
     public ImportOfxFileHandler(
         IOfxParser parser,
-        ITransactionRepository transactionRepository,
         IFileRepository fileRepository,
         ICategoryRepository categoryRepository,
         ILogger<ImportOfxFileHandler> logger,
         IOptions<ImportSettings> importSettings,
         IValidator<OfxTransaction> transactionValidator,
-        IDateTimeProvider dateTimeProvider)
+        IDateTimeProvider dateTimeProvider,
+        ITransactionInserter transactionInserter)
     {
         _parser = parser ?? throw new ArgumentNullException(nameof(parser));
-        _transactionRepository = transactionRepository ?? throw new ArgumentNullException(nameof(transactionRepository));
         _fileRepository = fileRepository ?? throw new ArgumentNullException(nameof(fileRepository));
         _categoryRepository = categoryRepository ?? throw new ArgumentNullException(nameof(categoryRepository));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _importSettings = importSettings.Value ?? throw new ArgumentNullException(nameof(importSettings));
         _transactionValidator = transactionValidator ?? throw new ArgumentNullException(nameof(transactionValidator));
         _dateTimeProvider = dateTimeProvider ?? throw new ArgumentNullException(nameof(dateTimeProvider));
+        _transactionInserter = transactionInserter ?? throw new ArgumentNullException(nameof(transactionInserter));
     }
     
     /// <inheritdoc />
@@ -51,7 +53,7 @@ public class ImportOfxFileHandler : IImportOfxFileHandler
         var fileId = importedFile.Id;
 
         // Пакет DTO для пакетной вставки
-        var batch = new List<BulkTransactionDto>(_importSettings.BatchSize);
+        var batch = new List<TransactionInsertDto>(_importSettings.BatchSize);
 
         var totalCount = 0;
         var importedCount = 0;
@@ -75,14 +77,14 @@ public class ImportOfxFileHandler : IImportOfxFileHandler
             }
 
             // Определяем или создаём категорию и формируем DTO
-            var category = await _categoryRepository.GetOrCreateAsync(t.Category!, cancellationToken);
-            var dto = new BulkTransactionDto(
-                ImportedFileId: fileId,
+            var categoryId = await _categoryRepository.GetOrCreateCategoryIdAsync(t.Category!);
+            var dto = new TransactionInsertDto(
+                FileId: fileId,
                 FitId: t.TranId!,
                 Date: DateTime.SpecifyKind(t.TranDate!.Value, DateTimeKind.Utc),
                 Amount: t.Amount!.Value,
                 Description: t.Description!,
-                CategoryId: category.Id
+                CategoryId: categoryId
             );
 
             batch.Add(dto);
@@ -91,7 +93,7 @@ public class ImportOfxFileHandler : IImportOfxFileHandler
             {
                 continue;
             }
-            var bulkResult = await _transactionRepository.BulkInsertCopyAsync(batch, cancellationToken);
+            var bulkResult = await _transactionInserter.BulkInsertCopyAsync(batch, cancellationToken);
             importedCount += bulkResult.InsertedCount;
             skippedDuplicateCount += bulkResult.SkippedDuplicateCount;
             batch.Clear();
@@ -99,12 +101,12 @@ public class ImportOfxFileHandler : IImportOfxFileHandler
 
         if (batch.Count > 0)
         {
-            var bulkResult = await _transactionRepository.BulkInsertCopyAsync(batch, cancellationToken);
+            var bulkResult = await _transactionInserter.BulkInsertCopyAsync(batch, cancellationToken);
             importedCount += bulkResult.InsertedCount;
             skippedDuplicateCount += bulkResult.SkippedDuplicateCount;
         }
 
-        importedFile.Status = ImportedFileStatus.Processed;
+        importedFile.Status = ImportedFileStatus.Completed;
         _logger.LogInformation("Импорт OFX-файла {FileName} завершён. Всего транзакций: {TotalCount}, успешно импортировано: {ImportedCount}", command.FileName, totalCount, importedCount);
         return new ApiResponse<ImportOfxFileResult>(true, new ImportOfxFileResult { TotalCount = totalCount, ImportedCount = importedCount, ErrorCount = errorCount, SkippedDuplicateCount = skippedDuplicateCount });
     }
@@ -112,20 +114,18 @@ public class ImportOfxFileHandler : IImportOfxFileHandler
     /// <summary>
     /// Создаёт запись об импортируемом файле
     /// </summary>
-    private async Task<ImportedFile> CreateFile(ImportOfxFileCommand command, CancellationToken cancellationToken)
+    private async Task<BankFile> CreateFile(ImportOfxFileCommand command, CancellationToken cancellationToken)
     {
-        var importedFile = await _fileRepository.GetByFileNameAsync(command.FileName);
-        
-        if (importedFile is not null)
+        if (await _fileRepository.ExistsByFileNameAsync(command.FileName))
         {
             throw new InvalidOperationException($"Файл с именем '{command.FileName}' уже импортирован и не может быть повторно загружен.");
         }
         
-        importedFile = new ImportedFile
+        var importedFile = new BankFile
         {
             FileName = command.FileName,
             ImportedAt = _dateTimeProvider.UtcNow,
-            Status = ImportedFileStatus.Processing
+            Status = ImportedFileStatus.InProgress
         };
         
         return await _fileRepository.CreateAsync(importedFile, cancellationToken);

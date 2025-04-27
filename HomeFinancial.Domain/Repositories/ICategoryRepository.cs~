@@ -5,7 +5,7 @@ namespace HomeFinancial.Domain.Repositories;
 /// <summary>
 /// Интерфейс репозитория для работы с категориями
 /// </summary>
-public interface ICategoryRepository : IGenericRepository<TransactionCategory>
+public interface ICategoryRepository : IGenericRepository<Category>
 {
     /// <summary>
     /// Получает идентификатор категории по имени. Если категории с указанным именем нет, создаёт новую.

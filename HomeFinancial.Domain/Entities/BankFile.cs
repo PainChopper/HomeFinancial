@@ -5,7 +5,7 @@ namespace HomeFinancial.Domain.Entities;
 /// <summary>
 /// Импортированный файл с банковскими транзакциями
 /// </summary>
-public record ImportedFile : Entity
+public record BankFile : Entity
 {
     /// <summary>
     /// Имя файла

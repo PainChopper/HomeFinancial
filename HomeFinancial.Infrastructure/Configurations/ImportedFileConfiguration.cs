@@ -4,9 +4,9 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace HomeFinancial.Infrastructure.Configurations;
 
-public class ImportedFileConfiguration : IEntityTypeConfiguration<ImportedFile>
+public class ImportedFileConfiguration : IEntityTypeConfiguration<BankFile>
 {
-    public void Configure(EntityTypeBuilder<ImportedFile> builder)
+    public void Configure(EntityTypeBuilder<BankFile> builder)
     {
         builder.HasKey(f => f.Id);
         builder.Metadata.GetProperties()

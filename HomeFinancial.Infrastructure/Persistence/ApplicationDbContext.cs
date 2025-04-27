@@ -16,9 +16,9 @@ public class ApplicationDbContext : DbContext
     /// <summary>
     /// Импортированные файлы
     /// </summary>
-    public DbSet<ImportedFile> ImportedFiles { get; set; } = null!;
-    public DbSet<BankTransaction> BankTransactions { get; set; } = null!;
-    public DbSet<Category> Categories { get; set; } = null!;
+    public DbSet<BankFile> BankFiles { get; set; } = null!;
+    public DbSet<FileTransaction> FileTransactions { get; set; } = null!;
+    public DbSet<TransactionCategory> TransactionCategories { get; set; } = null!;
 
     // Конфигурация моделей
     protected override void OnModelCreating(ModelBuilder builder)

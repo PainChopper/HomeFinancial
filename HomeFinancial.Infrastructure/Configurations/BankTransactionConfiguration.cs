@@ -4,10 +4,11 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace HomeFinancial.Infrastructure.Configurations;
 
-public class BankTransactionConfiguration : IEntityTypeConfiguration<BankTransaction>
+public class BankTransactionConfiguration : IEntityTypeConfiguration<FileTransaction>
 {
-    public void Configure(EntityTypeBuilder<BankTransaction> builder)
+    public void Configure(EntityTypeBuilder<FileTransaction> builder)
     {
+        // Партицирование по imported_file_id
         builder.HasKey(t => t.Id);
         builder.Metadata.GetProperties()
             .ToList()
@@ -16,5 +17,11 @@ public class BankTransactionConfiguration : IEntityTypeConfiguration<BankTransac
             .WithMany()
             .HasForeignKey(t => t.CategoryId)
             .OnDelete(DeleteBehavior.Restrict);
+        // Еще хорошо было бы партицую по FileId задать, чтобы удалять транзакции было сразу файлами без напряжения сервера
+        // PARTITION BY LIST (file_id)
+        // Есть пара решений:
+        // 1. Можно NpgsqlMigrationsSqlGenerator переопределить и использовать на этапе миграции, чтобы дописать DDL SQL
+        // 2. Можно использовать https://github.com/pgpartman/pg_partman, вытащить DDL таблицы из БД,
+        // добавить туда PARTITION BY LIST (file_id) и пересоздать таблицу. 
     }
 }

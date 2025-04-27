@@ -10,26 +10,11 @@ namespace HomeFinancial.Infrastructure.Implementations;
 /// Репозиторий для работы с импортированными файлами
 /// </summary>
 public class FileRepository(ApplicationDbContext dbContext, ILogger<FileRepository> logger)
-    : GenericRepository<ImportedFile>(dbContext, logger), IFileRepository
+    : GenericRepository<BankFile>(dbContext, logger), IFileRepository
 {
     /// <summary>
     /// Проверяет, существует ли файл с указанным именем в базе данных
     /// </summary>
     public async Task<bool> ExistsByFileNameAsync(string fileName)
         => await DbSet.AnyAsync(f => f.FileName == fileName);
-
-    /// <summary>
-    /// Получает файл по имени
-    /// </summary>
-    public async Task<ImportedFile?> GetByFileNameAsync(string fileName)
-        => await DbSet.FirstOrDefaultAsync(f => f.FileName == fileName);
-
-    /// <summary>
-    /// Создает новую запись об импортированном файле
-    /// </summary>
-    public override async Task<ImportedFile> CreateAsync(ImportedFile file, CancellationToken cancellationToken = default)
-    {
-        Logger.LogInformation("Attempting to add imported file: {FileName}", file.FileName);
-        return await base.CreateAsync(file, cancellationToken);
-    }
 }

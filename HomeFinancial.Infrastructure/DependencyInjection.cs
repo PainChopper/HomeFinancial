@@ -1,4 +1,5 @@
 using HomeFinancial.Application.Common;
+using HomeFinancial.Application.Interfaces;
 using HomeFinancial.Domain.Repositories;
 using HomeFinancial.Infrastructure.Implementations;
 using HomeFinancial.Infrastructure.Persistence;
@@ -26,8 +27,8 @@ public static class DependencyInjection
         // Регистрация репозиториев
         services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
         services.AddScoped<ICategoryRepository, CategoryRepository>();
-        services.AddScoped<ITransactionRepository, TransactionRepository>();
         services.AddScoped<IFileRepository, FileRepository>();
+        services.AddScoped<ITransactionInserter, TransactionInserter>();
 
         return services;
     }
