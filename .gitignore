@@ -26,6 +26,7 @@ artifacts/
 
 # VSCode
 .vscode/
+*.*~
 
 # Logs
 *.log
