@@ -3,7 +3,7 @@ namespace HomeFinancial.Domain.Entities;
 /// <summary>
 /// Статус импортированного файла (отражает этап обработки)
 /// </summary>
-public enum ImportedFileStatus
+public enum BankFileStatus
 {
     /// <summary>
     /// Файл в процессе обработки

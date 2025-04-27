@@ -106,7 +106,7 @@ public class ImportOfxFileHandler : IImportOfxFileHandler
             skippedDuplicateCount += bulkResult.SkippedDuplicateCount;
         }
 
-        importedFile.Status = ImportedFileStatus.Completed;
+        importedFile.Status = BankFileStatus.Completed;
         _logger.LogInformation("Импорт OFX-файла {FileName} завершён. Всего транзакций: {TotalCount}, успешно импортировано: {ImportedCount}", command.FileName, totalCount, importedCount);
         return new ApiResponse<ImportOfxFileResult>(true, new ImportOfxFileResult { TotalCount = totalCount, ImportedCount = importedCount, ErrorCount = errorCount, SkippedDuplicateCount = skippedDuplicateCount });
     }
@@ -125,7 +125,7 @@ public class ImportOfxFileHandler : IImportOfxFileHandler
         {
             FileName = command.FileName,
             ImportedAt = _dateTimeProvider.UtcNow,
-            Status = ImportedFileStatus.InProgress
+            Status = BankFileStatus.InProgress
         };
         
         return await _fileRepository.CreateAsync(importedFile, cancellationToken);

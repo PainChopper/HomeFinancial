@@ -20,5 +20,5 @@ public record BankFile : Entity
     /// <summary>
     /// Статус файла
     /// </summary>
-    public required ImportedFileStatus Status { get; set; }
+    public required BankFileStatus Status { get; set; }
 }
