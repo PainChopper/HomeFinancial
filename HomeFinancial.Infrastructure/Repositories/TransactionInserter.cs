@@ -1,37 +1,32 @@
-using System.Collections.Immutable;
 using HomeFinancial.Application.Dtos;
 using HomeFinancial.Application.Interfaces;
 using HomeFinancial.Infrastructure.Persistence;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Npgsql;
 
 namespace HomeFinancial.Infrastructure.Repositories;
 
-public class TransactionRepository : ITransactionRepository
+public class TransactionInserter : ITransactionInserter
 {
-    private readonly ApplicationDbContext _dbContext;
     private readonly ILogger _logger;
     private readonly ConnectionStrings _connectionStrings;
 
-    public TransactionRepository(
-        ApplicationDbContext dbContext, 
-        ILogger<TransactionRepository> logger,
-        ConnectionStrings connectionStrings)
+    public TransactionInserter(ILogger<TransactionInserter> logger, ConnectionStrings connectionStrings)
     {
-        _dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _connectionStrings = connectionStrings ?? throw new ArgumentNullException(nameof(connectionStrings));
     }
 
     /// <inheritdoc/>
-    public async Task<(int InsertedCount, int SkippedDuplicateCount)> BulkInsertCopyAsync(
+    public async Task<(int Inserted, int Duplicates)> BulkInsertCopyAsync(
         IList<TransactionInsertDto> transactions,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(transactions);
 
-        var existingFitIds = await GetExistingFitIdsAsync(transactions, cancellationToken);
+        var existingFitIds = await GetExistingFitIdsAsync(
+            transactions.Select(t => t.FitId).ToArray(), 
+            cancellationToken);
 
         foreach (var fitId in existingFitIds)
         {
@@ -49,18 +44,17 @@ public class TransactionRepository : ITransactionRepository
             return (0, existingFitIds.Count);
         }
 
-        // Открываем отдельное соединение напрямую через Npgsql
         await using var conn = new NpgsqlConnection(_connectionStrings.Postgres);
         await conn.OpenAsync(cancellationToken);
 
+        const string sql = """
+                           COPY file_transactions
+                           (file_id, fit_id, date, amount, description, category_id)
+                           FROM STDIN (FORMAT BINARY)
+                           """;
         try
         {
-            // Начинаем бинарный COPY для максимальной скорости
-            await using var writer = await conn.BeginBinaryImportAsync(
-                "COPY file_transactions " +
-                "(file_id, fit_id, date, amount, description, category_id) " +
-                "FROM STDIN (FORMAT BINARY)",
-                cancellationToken);
+            await using var writer = await conn.BeginBinaryImportAsync(sql, cancellationToken);
 
             foreach (var t in newItems)
             {
@@ -84,23 +78,39 @@ public class TransactionRepository : ITransactionRepository
             _logger.LogError(ex, "Ошибка при бинарном COPY в BulkInsertCopyAsync");
             throw;
         }
-        // Соединение закроется автоматически благодаря await using
-    }        
-    
+    }
+
     /// <summary>
     /// Получает список существующих FIT-ID из базы, сравнивая с переданным списком DTO
     /// </summary>
-    /// <param name="transactions">Список DTO, для которых нужно найти существующие FIT-ID</param>
+    /// <param name="fitIds"></param>
     /// <param name="cancellationToken">Токен отмены операции</param>
     /// <returns>Сет существующих FIT-ID</returns>
-    private async Task<HashSet<string>> GetExistingFitIdsAsync(IList<TransactionInsertDto> transactions, CancellationToken cancellationToken)
+    private async Task<HashSet<string>> GetExistingFitIdsAsync(string[] fitIds, CancellationToken cancellationToken)
     {
-        var fitIds = transactions.Select(t => t.FitId)
-            .ToImmutableHashSet();
+        var result = new HashSet<string>();
 
-        return await _dbContext.FileTransactions
-            .Where(t => fitIds.Contains(t.FitId))
-            .Select(t => t.FitId)
-            .ToHashSetAsync(cancellationToken);
+        if (fitIds.Length == 0)
+            return result;
+
+        const string sql = """
+                           SELECT fit_id
+                           FROM file_transactions
+                           WHERE fit_id = ANY (@fit_ids)
+                           """;
+
+        await using var conn = new NpgsqlConnection(_connectionStrings.Postgres);
+        await conn.OpenAsync(cancellationToken);
+
+        await using var cmd = new NpgsqlCommand(sql, conn);
+        cmd.Parameters.AddWithValue("fit_ids", NpgsqlTypes.NpgsqlDbType.Array | NpgsqlTypes.NpgsqlDbType.Text, fitIds);
+
+        await using var reader = await cmd.ExecuteReaderAsync(cancellationToken);
+        while (await reader.ReadAsync(cancellationToken))
+        {
+            result.Add(reader.GetString(0));
+        }
+
+        return result;
     }
 }

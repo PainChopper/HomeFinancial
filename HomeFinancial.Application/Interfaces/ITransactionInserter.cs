@@ -2,7 +2,7 @@ using HomeFinancial.Application.Dtos;
 
 namespace HomeFinancial.Application.Interfaces;
 
-public interface ITransactionRepository
+public interface ITransactionInserter
 {
     /// <summary>
     /// Выполняет пакетную вставку банковских транзакций в базу данных с использованием команды COPY PostgreSQL.
@@ -10,7 +10,7 @@ public interface ITransactionRepository
     /// <param name="transactions">Список банковских транзакций для вставки.</param>
     /// <param name="cancellationToken">Токен отмены для прерывания операции.</param>
     /// <returns>Кортеж: (количество созданных транзакций, количество пропущенных дубликатов)</returns>
-    Task<(int InsertedCount, int SkippedDuplicateCount)> BulkInsertCopyAsync(
+    Task<(int Inserted, int Duplicates)> BulkInsertCopyAsync(
         IList<TransactionInsertDto> transactions, 
         CancellationToken cancellationToken = default);
 }

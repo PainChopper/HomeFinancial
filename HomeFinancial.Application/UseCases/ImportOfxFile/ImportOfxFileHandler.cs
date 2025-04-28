@@ -22,7 +22,7 @@ public class ImportOfxFileHandler : IImportOfxFileHandler
     private readonly ImportSettings _importSettings;
     private readonly IValidator<OfxTransactionDto> _transactionValidator;
     private readonly IDateTimeProvider _dateTimeProvider;
-    private readonly ITransactionRepository _transactionRepository;
+    private readonly ITransactionInserter _transactionInserter;
     private readonly ILeaseService _leaseService;
 
     public ImportOfxFileHandler(
@@ -33,7 +33,7 @@ public class ImportOfxFileHandler : IImportOfxFileHandler
         IOptions<ImportSettings> importSettings,
         IValidator<OfxTransactionDto> transactionValidator,
         IDateTimeProvider dateTimeProvider,
-        ITransactionRepository transactionRepository,
+        ITransactionInserter transactionInserter,
         ILeaseService leaseService)
     {
         _parser = parser ?? throw new ArgumentNullException(nameof(parser));
@@ -43,7 +43,7 @@ public class ImportOfxFileHandler : IImportOfxFileHandler
         _importSettings = importSettings.Value ?? throw new ArgumentNullException(nameof(importSettings));
         _transactionValidator = transactionValidator ?? throw new ArgumentNullException(nameof(transactionValidator));
         _dateTimeProvider = dateTimeProvider ?? throw new ArgumentNullException(nameof(dateTimeProvider));
-        _transactionRepository = transactionRepository ?? throw new ArgumentNullException(nameof(transactionRepository));
+        _transactionInserter = transactionInserter ?? throw new ArgumentNullException(nameof(transactionInserter));
         _leaseService = leaseService ?? throw new ArgumentNullException(nameof(leaseService));
     }
     
@@ -61,7 +61,7 @@ public class ImportOfxFileHandler : IImportOfxFileHandler
 
         var totalCount = 0;
         var importedCount = 0;
-        var skippedDuplicateCount = 0;
+        var duplicatesCount = 0;
         var errorCount = 0;
 
         // Потоковая обработка транзакций
@@ -99,18 +99,18 @@ public class ImportOfxFileHandler : IImportOfxFileHandler
                 continue;
             }
             await _leaseService.ValidateAndExtendLeaseAsync(command.FileName, leaseId, TimeSpan.FromMinutes(1));
-            var bulkResult = await _transactionRepository.BulkInsertCopyAsync(batch, cancellationToken);
-            importedCount += bulkResult.InsertedCount;
-            skippedDuplicateCount += bulkResult.SkippedDuplicateCount;
+            var bulkResult = await _transactionInserter.BulkInsertCopyAsync(batch, cancellationToken);
+            importedCount += bulkResult.Inserted;
+            duplicatesCount += bulkResult.Duplicates;
             batch.Clear();
         }
 
         if (batch.Count > 0)
         {
             await _leaseService.ValidateAndExtendLeaseAsync(command.FileName, leaseId, TimeSpan.FromMinutes(1));
-            var bulkResult = await _transactionRepository.BulkInsertCopyAsync(batch, cancellationToken);
-            importedCount += bulkResult.InsertedCount;
-            skippedDuplicateCount += bulkResult.SkippedDuplicateCount;
+            var bulkResult = await _transactionInserter.BulkInsertCopyAsync(batch, cancellationToken);
+            importedCount += bulkResult.Inserted;
+            duplicatesCount += bulkResult.Duplicates;
         }
 
         importedFile.Status = BankFileStatus.Completed;
@@ -119,7 +119,7 @@ public class ImportOfxFileHandler : IImportOfxFileHandler
         
         _logger.LogInformation("Импорт OFX-файла {FileName} завершён. Всего транзакций: {TotalCount}, успешно импортировано: {ImportedCount}", command.FileName, totalCount, importedCount);
 
-        return new ApiResponse<ImportOfxFileResult>(true, new ImportOfxFileResult { TotalCount = totalCount, ImportedCount = importedCount, ErrorCount = errorCount, SkippedDuplicateCount = skippedDuplicateCount });
+        return new ApiResponse<ImportOfxFileResult>(true, new ImportOfxFileResult { TotalCount = totalCount, ImportedCount = importedCount, ErrorCount = errorCount, SkippedDuplicateCount = duplicatesCount });
     }
 
     /// <summary>
