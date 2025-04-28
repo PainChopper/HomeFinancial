@@ -1,7 +1,7 @@
 using HomeFinancial.Application.Common;
 using StackExchange.Redis;
 
-namespace HomeFinancial.Infrastructure.Implementations;
+namespace HomeFinancial.Infrastructure.Services;
 
 /// <summary>
 /// Реализация ICacheService через Redis (IDistributedCache).

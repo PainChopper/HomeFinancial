@@ -8,9 +8,9 @@ namespace HomeFinancial.Domain.Repositories;
 public interface IFileRepository : IGenericRepository<BankFile>
 {
     /// <summary>
-    /// Проверяет, существует ли файл с указанным именем
+    /// Получает файл по имени
     /// </summary>
     /// <param name="fileName">Имя файла</param>
-    /// <returns>true, если файл существует; иначе false</returns>
-    Task<bool> ExistsByFileNameAsync(string fileName);
+    /// <returns>Файл, если найден; иначе null</returns>
+    Task<BankFile?> GetByFileNameAsync(string fileName);
 }

@@ -6,17 +6,22 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Npgsql;
 
-namespace HomeFinancial.Infrastructure.Implementations;
+namespace HomeFinancial.Infrastructure.Repositories;
 
 public class TransactionInserter : ITransactionInserter
 {
     private readonly ApplicationDbContext _dbContext;
     private readonly ILogger _logger;
+    private readonly ConnectionStrings _connectionStrings;
 
-    public TransactionInserter(ApplicationDbContext dbContext, ILogger<TransactionInserter> logger)
+    public TransactionInserter(
+        ApplicationDbContext dbContext, 
+        ILogger<TransactionInserter> logger,
+        ConnectionStrings connectionStrings)
     {
         _dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        _connectionStrings = connectionStrings ?? throw new ArgumentNullException(nameof(connectionStrings));
     }
 
     /// <inheritdoc/>
@@ -44,9 +49,9 @@ public class TransactionInserter : ITransactionInserter
             return (0, existingFitIds.Count);
         }
 
-        // Открываем соединение через EF Core
-        var conn = (NpgsqlConnection) _dbContext.Database.GetDbConnection();
-        await _dbContext.Database.OpenConnectionAsync(cancellationToken);
+        // Открываем отдельное соединение напрямую через Npgsql
+        await using var conn = new NpgsqlConnection(_connectionStrings.PostgresConnection);
+        await conn.OpenAsync(cancellationToken);
 
         try
         {
@@ -79,10 +84,7 @@ public class TransactionInserter : ITransactionInserter
             _logger.LogError(ex, "Ошибка при бинарном COPY в BulkInsertCopyAsync");
             throw;
         }
-        finally
-        {
-            await _dbContext.Database.CloseConnectionAsync();
-        }
+        // Соединение закроется автоматически благодаря await using
     }        
     
     /// <summary>
@@ -93,7 +95,8 @@ public class TransactionInserter : ITransactionInserter
     /// <returns>Сет существующих FIT-ID</returns>
     private async Task<HashSet<string>> GetExistingFitIdsAsync(IList<TransactionInsertDto> transactions, CancellationToken cancellationToken)
     {
-        var fitIds = transactions.Select(t => t.FitId).ToImmutableHashSet();
+        var fitIds = transactions.Select(t => t.FitId)
+            .ToImmutableHashSet();
 
         return await _dbContext.FileTransactions
             .Where(t => fitIds.Contains(t.FitId))

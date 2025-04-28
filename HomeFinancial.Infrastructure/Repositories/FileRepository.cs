@@ -3,7 +3,7 @@ using HomeFinancial.Domain.Repositories;
 using HomeFinancial.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
-namespace HomeFinancial.Infrastructure.Implementations;
+namespace HomeFinancial.Infrastructure.Repositories;
 
 /// <summary>
 /// Репозиторий для работы с импортированными файлами
@@ -12,8 +12,10 @@ public class FileRepository(ApplicationDbContext dbContext)
     : GenericRepository<BankFile>(dbContext), IFileRepository
 {
     /// <summary>
-    /// Проверяет, существует ли файл с указанным именем в базе данных
+    /// Возвращает файл с указанным именем из базы данных
     /// </summary>
-    public async Task<bool> ExistsByFileNameAsync(string fileName)
-        => await DbSet.AnyAsync(f => f.FileName == fileName);
+    public async Task<BankFile?> GetByFileNameAsync(string fileName)
+    {
+        return await DbSet.AsNoTracking().FirstOrDefaultAsync(f => f.FileName == fileName);
+    }
 }

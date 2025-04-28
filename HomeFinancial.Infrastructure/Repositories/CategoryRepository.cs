@@ -1,13 +1,13 @@
 using System.Data;
+using HomeFinancial.Application.Common;
 using HomeFinancial.Domain.Entities;
 using HomeFinancial.Domain.Repositories;
 using HomeFinancial.Infrastructure.Persistence;
 using HomeFinancial.Infrastructure.Utils;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using HomeFinancial.Application.Common;
 
-namespace HomeFinancial.Infrastructure.Implementations;
+namespace HomeFinancial.Infrastructure.Repositories;
 
 // Репозиторий для работы с категориями, кэшируем их в одном Redis-хэше
 public sealed class CategoryRepository : GenericRepository<TransactionCategory>, ICategoryRepository

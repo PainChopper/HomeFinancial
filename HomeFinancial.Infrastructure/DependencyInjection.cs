@@ -1,7 +1,6 @@
 using HomeFinancial.Application.Common;
 using HomeFinancial.Application.Interfaces;
 using HomeFinancial.Domain.Repositories;
-using HomeFinancial.Infrastructure.Implementations;
 using HomeFinancial.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -9,6 +8,7 @@ using Microsoft.Extensions.Configuration;
 using HomeFinancial.Infrastructure.Utils;
 using StackExchange.Redis;
 using HomeFinancial.Infrastructure.HostedServices;
+using HomeFinancial.Infrastructure.Repositories;
 using HomeFinancial.Infrastructure.Services;
 
 namespace HomeFinancial.Infrastructure;
@@ -23,24 +23,26 @@ public static class DependencyInjection
         services.AddSingleton<IDateTimeProvider, SystemDateTimeProvider>();
         
         var postgresConnectionString = configuration.GetConnectionString("PostgresConnection")
-                                       ?? throw new ArgumentNullException(nameof(configuration), "Не найдена строка подключения Postgres");
+                                       ?? throw new InvalidOperationException("Не найдена строка подключения 'PostgresConnection' в конфигурации.");
         services.AddDbContext<ApplicationDbContext>(options =>
             options.UseNpgsql(postgresConnectionString)
                 .UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking)
                 .UseSnakeCaseNamingConvention());
 
         var redisConnectionString = configuration.GetConnectionString("Redis")
-                                    ?? throw new ArgumentNullException(nameof(configuration), "Не найдена строка подключения Redis");
+                                    ?? throw new InvalidOperationException("Не найдена строка подключения 'Redis' в конфигурации.");
         services.AddSingleton<IConnectionMultiplexer>(ConnectionMultiplexer.Connect(redisConnectionString));
+
         services.AddSingleton<ICacheService, RedisCacheService>();
         services.AddSingleton<ILeaseService, RedisLeaseService>();
-        
+        services.AddSingleton<RetryPolicyHelper>();
+                
         // Регистрация репозиториев
         services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
         services.AddScoped<ICategoryRepository, CategoryRepository>();
         services.AddScoped<IFileRepository, FileRepository>();
         services.AddScoped<ITransactionInserter, TransactionInserter>();
-        services.AddSingleton<RetryPolicyHelper>();
+
        
         // Hosted service для прогрева кэша категорий
         services.AddHostedService<CategoryCacheWarmupService>();

@@ -4,7 +4,6 @@ using Microsoft.Extensions.Configuration;
 
 namespace HomeFinancial.Infrastructure.Persistence;
 
-// ReSharper disable once UnusedType.Global
 public class ApplicationDbContextFactory : IDesignTimeDbContextFactory<ApplicationDbContext>
 {
     public ApplicationDbContext CreateDbContext(string[] args)

@@ -3,7 +3,7 @@ using HomeFinancial.Domain.Repositories;
 using HomeFinancial.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
-namespace HomeFinancial.Infrastructure.Implementations;
+namespace HomeFinancial.Infrastructure.Repositories;
 
 /// <summary>
 /// Базовая реализация общего репозитория
