@@ -4,8 +4,11 @@ using HomeFinancial.Domain.Repositories;
 using HomeFinancial.Infrastructure.Implementations;
 using HomeFinancial.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Configuration;
+using HomeFinancial.Infrastructure.Utils;
+using StackExchange.Redis;
+using HomeFinancial.Infrastructure.HostedServices;
 
 namespace HomeFinancial.Infrastructure;
 
@@ -18,17 +21,26 @@ public static class DependencyInjection
     {
         services.AddSingleton<IDateTimeProvider, SystemDateTimeProvider>();
         
-        var connectionString = configuration.GetConnectionString("PostgresConnection");
+        var postgresConnectionString = configuration.GetConnectionString("PostgresConnection")
+                                       ?? throw new ArgumentNullException(nameof(configuration), "Нет строки подключения Postgres");
         services.AddDbContext<ApplicationDbContext>(options =>
-            options.UseNpgsql(connectionString)
+            options.UseNpgsql(postgresConnectionString)
                 .UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking)
                 .UseSnakeCaseNamingConvention());
-    
+
+        var redisConnectionString = configuration.GetConnectionString("Redis")
+                                    ?? throw new ArgumentNullException(nameof(configuration), "Нет строки подключения Redis");
+        services.AddSingleton<IConnectionMultiplexer>(ConnectionMultiplexer.Connect(redisConnectionString));
+        services.AddScoped<ICacheService, RedisCacheService>();
+        
         // Регистрация репозиториев
         services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
         services.AddScoped<ICategoryRepository, CategoryRepository>();
         services.AddScoped<IFileRepository, FileRepository>();
         services.AddScoped<ITransactionInserter, TransactionInserter>();
+        services.AddSingleton<RetryPolicyHelper>();
+        // Hosted service для прогрева кэша категорий
+        services.AddHostedService<CategoryCacheWarmupService>();
 
         return services;
     }

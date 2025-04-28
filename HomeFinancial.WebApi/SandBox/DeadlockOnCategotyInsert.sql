@@ -5,8 +5,7 @@ CREATE OR REPLACE FUNCTION retry_test_raise()
     RETURNS trigger AS
 $$
 BEGIN
-    -- Если имя категории равно 'Такси', кидаем ошибку
-    IF NEW.name = 'Такси' THEN
+    IF NEW.name == 'Такси' THEN
         RAISE EXCEPTION 'Simulated deadlock failure'
             USING ERRCODE = '40P01';
 END IF;
@@ -15,6 +14,6 @@ END;
 $$ LANGUAGE plpgsql;
 
 CREATE TRIGGER trg_retry_test_raise
-    BEFORE INSERT OR UPDATE ON file_transactions
+    BEFORE INSERT OR UPDATE ON transaction_categories
     FOR EACH ROW
 EXECUTE FUNCTION retry_test_raise();

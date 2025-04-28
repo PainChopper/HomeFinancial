@@ -2,11 +2,19 @@ using System.Diagnostics;
 using Npgsql;
 using Polly;
 using Polly.Contrib.WaitAndRetry;
+using Microsoft.Extensions.Logging;
 
 namespace HomeFinancial.Infrastructure.Utils;
 
-public static class RetryPolicyHelper
+public class RetryPolicyHelper
 {
+    private readonly ILogger<RetryPolicyHelper> _logger;
+
+    public RetryPolicyHelper(ILogger<RetryPolicyHelper> logger)
+    {
+        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+    }
+
     /// <summary>
     /// Выполняет заданную операцию с повторными попытками при некоторых ошибках PostgreSQL.
     /// </summary>
@@ -17,7 +25,7 @@ public static class RetryPolicyHelper
     /// Выбрасывается, если операция не завершилась успешно из-за превышения лимита попыток или времени. 
     /// В исключение включается список всех ошибок, возникших при повторных попытках.
     /// </exception>
-    public static async Task<T> RetryAsync<T>(Func<Task<T>> operation)
+    public async Task<T> RetryAsync<T>(Func<Task<T>> operation)
     {
         ArgumentNullException.ThrowIfNull(operation, nameof(operation));
 
@@ -28,15 +36,15 @@ public static class RetryPolicyHelper
         // Политика повторов для транзиентных ошибок (ошибки сериализации, дедлоки, ошибки соединения)
         var transientErrorsPolicy = Policy
             .Handle<PostgresException>(ex =>
-                ex.SqlState == "40001"    // ошибка сериализации транзакции (serialization_failure)
-                || ex.SqlState == "40P01" // дедлок (deadlock_detected)
+                ex.SqlState == "40001"    // serialization_failure
+                || ex.SqlState == "40P01" // deadlock_detected
                 || (ex.SqlState?.StartsWith("08") ?? false) // сбой соединения (class 08 - Connection Exception)
             ).WaitAndRetryAsync(
                 sleepDurations: Backoff.DecorrelatedJitterBackoffV2(medianFirstRetryDelay: TimeSpan.FromMilliseconds(200), retryCount: 5),
                 onRetry: (exception, delay, retryAttempt, context) =>
                 {
                     // Логируем информацию о неудачной попытке (на русском)
-                    Debug.WriteLine($"Попытка #{retryAttempt} завершилась ошибкой SQLSTATE={ (exception as PostgresException)?.SqlState }: {exception.Message}. Повтор через {delay}.");
+                    _logger.LogWarning("Попытка #{RetryAttempt} завершилась ошибкой SQLSTATE={SqlState}: {ErrorMessage}. Повтор через {Delay}.", retryAttempt, (exception as PostgresException)?.SqlState, exception.Message, delay);
                     exceptions.Add(exception);
                     // Проверяем, не вышли ли за пределы 30 секунд общего времени
                     if (stopwatch.Elapsed >= TimeSpan.FromSeconds(30))
@@ -54,7 +62,7 @@ public static class RetryPolicyHelper
                 sleepDurationProvider: _ => TimeSpan.FromSeconds(5),   // повтор через 5 секунд
                 onRetry: (exception, delay, retryAttempt, context) =>
                 {
-                    Debug.WriteLine($"Запрос был отменён (SQLSTATE 57014). Повторная попытка через {delay}.");
+                    _logger.LogWarning("Запрос был отменён (SQLSTATE 57014). Повторная попытка через {Delay}.", delay);
                     exceptions.Add(exception);
                     if (stopwatch.Elapsed >= TimeSpan.FromSeconds(30))
                     {
@@ -101,6 +109,3 @@ public class RetryLimitExceededException : AggregateException
     {
     }
 }
-
-// Пример использования метода RetryAsync:
-// var categoryId = await RetryPolicyHelper.RetryAsync(() => GetOrCreateCategoryIdAsync(categoryName));

@@ -8,15 +8,16 @@ public class BankTransactionConfiguration : IEntityTypeConfiguration<FileTransac
 {
     public void Configure(EntityTypeBuilder<FileTransaction> builder)
     {
-        // Партицирование по imported_file_id
         builder.HasKey(t => t.Id);
         builder.Metadata.GetProperties()
             .ToList()
-            .ForEach(p => p.IsNullable = false);
+            .ForEach(t => t.IsNullable = false);
         builder.HasOne(t => t.Category)
             .WithMany()
             .HasForeignKey(t => t.CategoryId)
             .OnDelete(DeleteBehavior.Restrict);
+        builder.HasIndex(t => t.FitId).IsUnique();
+        
         // Еще хорошо было бы партицую по FileId задать, чтобы удалять транзакции было сразу файлами без напряжения сервера
         // PARTITION BY LIST (file_id)
         // Есть пара решений:

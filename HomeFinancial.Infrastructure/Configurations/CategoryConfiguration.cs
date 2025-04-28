@@ -13,7 +13,5 @@ public class CategoryConfiguration : IEntityTypeConfiguration<TransactionCategor
             .IsRequired()
             .HasMaxLength(100);
         builder.HasIndex(c => c.Name).IsUnique();
-        
-
     }
 }
