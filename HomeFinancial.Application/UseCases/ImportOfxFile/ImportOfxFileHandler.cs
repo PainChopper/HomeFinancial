@@ -20,7 +20,7 @@ public class ImportOfxFileHandler : IImportOfxFileHandler
     private readonly ICategoryRepository _categoryRepository;
     private readonly ILogger _logger;
     private readonly ImportSettings _importSettings;
-    private readonly IValidator<OfxTransaction> _transactionValidator;
+    private readonly IValidator<OfxTransactionDto> _transactionValidator;
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly ITransactionInserter _transactionInserter;
     private readonly ILeaseService _leaseService;
@@ -31,7 +31,7 @@ public class ImportOfxFileHandler : IImportOfxFileHandler
         ICategoryRepository categoryRepository,
         ILogger<ImportOfxFileHandler> logger,
         IOptions<ImportSettings> importSettings,
-        IValidator<OfxTransaction> transactionValidator,
+        IValidator<OfxTransactionDto> transactionValidator,
         IDateTimeProvider dateTimeProvider,
         ITransactionInserter transactionInserter,
         ILeaseService leaseService)

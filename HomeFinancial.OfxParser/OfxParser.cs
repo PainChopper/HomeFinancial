@@ -22,7 +22,7 @@ public class OfxParser : IOfxParser
     /// </summary>
     /// <param name="stream">Поток OFX-файла</param>
     /// <returns>Перечисление транзакций</returns>
-    public IEnumerable<OfxTransaction> ParseOfxFile(Stream stream)
+    public IEnumerable<OfxTransactionDto> ParseOfxFile(Stream stream)
     {
         using var reader = XmlReader.Create(stream, new XmlReaderSettings { IgnoreWhitespace = true });
 
@@ -56,7 +56,7 @@ public class OfxParser : IOfxParser
                 parsedAmount = amt;
             }
 
-            var transaction = new OfxTransaction(
+            var transaction = new OfxTransactionDto(
                 TranId: fitIdValue,
                 TranDate: parsedDate,
                 Category: memoValue,

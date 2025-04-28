@@ -8,7 +8,7 @@ namespace HomeFinancial.Infrastructure.Utils;
 
 public class RetryPolicyHelper
 {
-    private readonly ILogger<RetryPolicyHelper> _logger;
+    private readonly ILogger _logger;
 
     public RetryPolicyHelper(ILogger<RetryPolicyHelper> logger)
     {

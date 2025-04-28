@@ -1,10 +1,8 @@
-using HomeFinancial.Infrastructure.Persistence;
-using HomeFinancial.Domain.Entities;
 using HomeFinancial.Application.Common;
+using HomeFinancial.Domain.Repositories;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using Microsoft.EntityFrameworkCore;
 
 namespace HomeFinancial.Infrastructure.HostedServices;
 
@@ -16,7 +14,7 @@ public class CategoryCacheWarmupService : IHostedService
     private const string CategoriesHashKey = "Categories";
 
     private readonly IServiceProvider _serviceProvider;
-    private readonly ILogger<CategoryCacheWarmupService> _logger;
+    private readonly ILogger _logger;
 
     public CategoryCacheWarmupService(IServiceProvider serviceProvider, ILogger<CategoryCacheWarmupService> logger)
     {
@@ -27,13 +25,10 @@ public class CategoryCacheWarmupService : IHostedService
     public async Task StartAsync(CancellationToken cancellationToken)
     {
         using var scope = _serviceProvider.CreateScope();
-        var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
         var cache = scope.ServiceProvider.GetRequiredService<ICacheService>();
+        var repository = scope.ServiceProvider.GetRequiredService<ICategoryRepository>();
 
-        var categories = await db.Set<TransactionCategory>()
-            .AsNoTracking()
-            .Select(c => new { c.Name, c.Id })
-            .ToListAsync(cancellationToken);
+        var categories = await repository.GetAllAsync(cancellationToken);
 
         foreach (var cat in categories)
         {

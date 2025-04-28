@@ -13,7 +13,7 @@ public static class DependencyInjection
         services.AddScoped<IImportOfxFileHandler, ImportOfxFileHandler>();
         services.AddOptions<ImportSettings>()
             .BindConfiguration("ImportSettings");
-        services.AddSingleton<FluentValidation.IValidator<OfxTransaction>, OfxTransactionValidator>();
+        services.AddSingleton<FluentValidation.IValidator<OfxTransactionDto>, OfxTransactionValidator>();
         return services;
     }
 }

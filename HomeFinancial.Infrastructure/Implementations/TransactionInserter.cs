@@ -11,7 +11,7 @@ namespace HomeFinancial.Infrastructure.Implementations;
 public class TransactionInserter : ITransactionInserter
 {
     private readonly ApplicationDbContext _dbContext;
-    private readonly ILogger<TransactionInserter> _logger;
+    private readonly ILogger _logger;
 
     public TransactionInserter(ApplicationDbContext dbContext, ILogger<TransactionInserter> logger)
     {
