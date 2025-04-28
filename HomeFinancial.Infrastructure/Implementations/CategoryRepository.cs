@@ -20,7 +20,7 @@ public sealed class CategoryRepository : GenericRepository<TransactionCategory>,
                               ILogger<CategoryRepository> logger,
                               RetryPolicyHelper retryPolicyHelper,
                               ICacheService cacheService)
-        : base(dbContext, logger)
+        : base(dbContext)
     {
         _retryPolicyHelper = retryPolicyHelper ?? throw new ArgumentNullException(nameof(retryPolicyHelper));
         _cacheService      = cacheService      ?? throw new ArgumentNullException(nameof(cacheService));
@@ -58,7 +58,7 @@ LIMIT 1;";
             if (conn.State != ConnectionState.Open)
                 await conn.OpenAsync();
 
-            using var cmd = conn.CreateCommand();
+            await using var cmd = conn.CreateCommand();
             cmd.CommandText = sql;
             var p = cmd.CreateParameter();
             p.ParameterName = "@CategoryName";

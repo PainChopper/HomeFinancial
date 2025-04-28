@@ -23,6 +23,7 @@ public class ImportOfxFileHandler : IImportOfxFileHandler
     private readonly IValidator<OfxTransaction> _transactionValidator;
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly ITransactionInserter _transactionInserter;
+    private readonly ILeaseService _leaseService;
 
     public ImportOfxFileHandler(
         IOfxParser parser,
@@ -32,7 +33,8 @@ public class ImportOfxFileHandler : IImportOfxFileHandler
         IOptions<ImportSettings> importSettings,
         IValidator<OfxTransaction> transactionValidator,
         IDateTimeProvider dateTimeProvider,
-        ITransactionInserter transactionInserter)
+        ITransactionInserter transactionInserter,
+        ILeaseService leaseService)
     {
         _parser = parser ?? throw new ArgumentNullException(nameof(parser));
         _fileRepository = fileRepository ?? throw new ArgumentNullException(nameof(fileRepository));
@@ -42,6 +44,7 @@ public class ImportOfxFileHandler : IImportOfxFileHandler
         _transactionValidator = transactionValidator ?? throw new ArgumentNullException(nameof(transactionValidator));
         _dateTimeProvider = dateTimeProvider ?? throw new ArgumentNullException(nameof(dateTimeProvider));
         _transactionInserter = transactionInserter ?? throw new ArgumentNullException(nameof(transactionInserter));
+        _leaseService = leaseService ?? throw new ArgumentNullException(nameof(leaseService));
     }
     
     /// <inheritdoc />
@@ -62,6 +65,7 @@ public class ImportOfxFileHandler : IImportOfxFileHandler
         // Потоковая обработка транзакций
         var transactions = _parser.ParseOfxFile(command.FileStream);
         var skippedDuplicateCount = 0;
+        var leaseId = await _leaseService.AcquireLeaseAsync(command.FileName, TimeSpan.FromMinutes(1));
         foreach (var t in transactions)
         {
             totalCount++;
@@ -93,6 +97,7 @@ public class ImportOfxFileHandler : IImportOfxFileHandler
             {
                 continue;
             }
+            await _leaseService.ValidateAndExtendLeaseAsync(command.FileName, leaseId, TimeSpan.FromMinutes(1));
             var bulkResult = await _transactionInserter.BulkInsertCopyAsync(batch, cancellationToken);
             importedCount += bulkResult.InsertedCount;
             skippedDuplicateCount += bulkResult.SkippedDuplicateCount;
@@ -101,13 +106,17 @@ public class ImportOfxFileHandler : IImportOfxFileHandler
 
         if (batch.Count > 0)
         {
+            await _leaseService.ValidateAndExtendLeaseAsync(command.FileName, leaseId, TimeSpan.FromMinutes(1));
             var bulkResult = await _transactionInserter.BulkInsertCopyAsync(batch, cancellationToken);
             importedCount += bulkResult.InsertedCount;
             skippedDuplicateCount += bulkResult.SkippedDuplicateCount;
         }
 
         importedFile.Status = BankFileStatus.Completed;
+        await _fileRepository.UpdateAsync(importedFile, cancellationToken);
+        
         _logger.LogInformation("Импорт OFX-файла {FileName} завершён. Всего транзакций: {TotalCount}, успешно импортировано: {ImportedCount}", command.FileName, totalCount, importedCount);
+        await _leaseService.ReleaseLeaseAsync(command.FileName, leaseId);
         return new ApiResponse<ImportOfxFileResult>(true, new ImportOfxFileResult { TotalCount = totalCount, ImportedCount = importedCount, ErrorCount = errorCount, SkippedDuplicateCount = skippedDuplicateCount });
     }
 

@@ -2,7 +2,6 @@ using HomeFinancial.Domain.Common;
 using HomeFinancial.Domain.Repositories;
 using HomeFinancial.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
 
 namespace HomeFinancial.Infrastructure.Implementations;
 
@@ -12,13 +11,11 @@ namespace HomeFinancial.Infrastructure.Implementations;
 public class GenericRepository<T> : IGenericRepository<T> where T : class, IEntity
 {
     protected readonly ApplicationDbContext DbContext;
-    protected readonly ILogger Logger;
     protected readonly DbSet<T> DbSet;
 
-    public GenericRepository(ApplicationDbContext dbContext, ILogger<GenericRepository<T>> logger)
+    public GenericRepository(ApplicationDbContext dbContext)
     {
         DbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
-        Logger = logger ?? throw new ArgumentNullException(nameof(logger));
         DbSet = DbContext.Set<T>();
     }
 
@@ -26,7 +23,7 @@ public class GenericRepository<T> : IGenericRepository<T> where T : class, IEnti
         => await DbSet.ToListAsync(cancellationToken: cancellationToken);
 
     public virtual async Task<T?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
-        => await DbSet.FindAsync(new object?[] { id }, cancellationToken);
+        => await DbSet.FindAsync([id], cancellationToken);
 
     public virtual async Task<T> CreateAsync(T entity, CancellationToken cancellationToken = default)
     {
@@ -43,11 +40,9 @@ public class GenericRepository<T> : IGenericRepository<T> where T : class, IEnti
 
     public virtual async Task DeleteAsync(int id, CancellationToken cancellationToken = default)
     {
-        var entity = await GetByIdAsync(id, cancellationToken);
-        if (entity != null)
-        {
-            DbSet.Remove(entity);
-            await DbContext.SaveChangesAsync(cancellationToken);
-        }
+        var entity = Activator.CreateInstance<T>();
+        typeof(T).GetProperty(nameof(IEntity.Id))?.SetValue(entity, id);
+        DbSet.Remove(entity);
+        await DbContext.SaveChangesAsync(cancellationToken);
     }
 }

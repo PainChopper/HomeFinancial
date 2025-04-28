@@ -14,6 +14,7 @@ public class ImportedFileConfiguration : IEntityTypeConfiguration<BankFile>
             .ForEach(p => p.IsNullable = false);
         builder.Property(f => f.FileName)
             .HasMaxLength(255);
-        builder.Metadata.GetProperties().ToList().ForEach(p => p.IsNullable = false);
+        builder.HasIndex(x => x.FileName)
+            .IsUnique();
     }
 }
