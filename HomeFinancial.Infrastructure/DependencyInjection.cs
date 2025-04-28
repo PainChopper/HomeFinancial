@@ -20,19 +20,22 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
-        services.AddSingleton<IDateTimeProvider, SystemDateTimeProvider>();
+
         
-        var postgresConnectionString = configuration.GetConnectionString("PostgresConnection")
-                                       ?? throw new InvalidOperationException("Не найдена строка подключения 'PostgresConnection' в конфигурации.");
+        var connectionStrings = configuration
+            .GetSection("ConnectionStrings")
+            .Get<ConnectionStrings>() ?? throw new InvalidOperationException("Секция ConnectionStrings не найдена в конфигурации.");
+        
+        services.AddSingleton(connectionStrings);
+        
         services.AddDbContext<ApplicationDbContext>(options =>
-            options.UseNpgsql(postgresConnectionString)
+            options.UseNpgsql(connectionStrings.Postgres)
                 .UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking)
                 .UseSnakeCaseNamingConvention());
 
-        var redisConnectionString = configuration.GetConnectionString("Redis")
-                                    ?? throw new InvalidOperationException("Не найдена строка подключения 'Redis' в конфигурации.");
-        services.AddSingleton<IConnectionMultiplexer>(ConnectionMultiplexer.Connect(redisConnectionString));
+        services.AddSingleton<IConnectionMultiplexer>(ConnectionMultiplexer.Connect(connectionStrings.Redis));
 
+        services.AddSingleton<IDateTimeProvider, SystemDateTimeProvider>();        
         services.AddSingleton<ICacheService, RedisCacheService>();
         services.AddSingleton<ILeaseService, RedisLeaseService>();
         services.AddSingleton<RetryPolicyHelper>();

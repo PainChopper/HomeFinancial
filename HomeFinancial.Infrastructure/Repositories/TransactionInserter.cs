@@ -50,7 +50,7 @@ public class TransactionInserter : ITransactionInserter
         }
 
         // Открываем отдельное соединение напрямую через Npgsql
-        await using var conn = new NpgsqlConnection(_connectionStrings.PostgresConnection);
+        await using var conn = new NpgsqlConnection(_connectionStrings.Postgres);
         await conn.OpenAsync(cancellationToken);
 
         try

@@ -14,7 +14,7 @@ public class ApplicationDbContextFactory : IDesignTimeDbContextFactory<Applicati
             .AddJsonFile("appsettings.json", optional: true)
             .Build();
 
-        var connectionString = configuration.GetConnectionString("PostgresConnection");
+        var connectionString = configuration.GetConnectionString("Postgres");
         var optionsBuilder = new DbContextOptionsBuilder<ApplicationDbContext>();
         optionsBuilder.UseNpgsql(connectionString)
             .UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking)

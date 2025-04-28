@@ -14,7 +14,6 @@ public static class DatabaseMigrationExtensions
         {
             logger.LogInformation("Применение миграций базы данных...");
             db.Database.Migrate();
-            logger.LogInformation("Миграции успешно применены.");
         }
         catch (Exception ex)
         {
