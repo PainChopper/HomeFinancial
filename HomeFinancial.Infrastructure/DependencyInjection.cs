@@ -44,7 +44,7 @@ public static class DependencyInjection
         services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
         services.AddScoped<ICategoryRepository, CategoryRepository>();
         services.AddScoped<IFileRepository, FileRepository>();
-        services.AddScoped<ITransactionInserter, TransactionInserter>();
+        services.AddScoped<ITransactionRepository, TransactionRepository>();
 
        
         // Hosted service для прогрева кэша категорий

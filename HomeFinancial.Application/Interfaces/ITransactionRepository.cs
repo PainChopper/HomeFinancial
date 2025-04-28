@@ -2,7 +2,7 @@ using HomeFinancial.Application.Dtos;
 
 namespace HomeFinancial.Application.Interfaces;
 
-public interface ITransactionInserter
+public interface ITransactionRepository
 {
     /// <summary>
     /// Выполняет пакетную вставку банковских транзакций в базу данных с использованием команды COPY PostgreSQL.

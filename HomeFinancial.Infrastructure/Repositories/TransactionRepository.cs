@@ -8,15 +8,15 @@ using Npgsql;
 
 namespace HomeFinancial.Infrastructure.Repositories;
 
-public class TransactionInserter : ITransactionInserter
+public class TransactionRepository : ITransactionRepository
 {
     private readonly ApplicationDbContext _dbContext;
     private readonly ILogger _logger;
     private readonly ConnectionStrings _connectionStrings;
 
-    public TransactionInserter(
+    public TransactionRepository(
         ApplicationDbContext dbContext, 
-        ILogger<TransactionInserter> logger,
+        ILogger<TransactionRepository> logger,
         ConnectionStrings connectionStrings)
     {
         _dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));

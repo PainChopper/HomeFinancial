@@ -22,7 +22,7 @@ public class ImportOfxFileHandler : IImportOfxFileHandler
     private readonly ImportSettings _importSettings;
     private readonly IValidator<OfxTransactionDto> _transactionValidator;
     private readonly IDateTimeProvider _dateTimeProvider;
-    private readonly ITransactionInserter _transactionInserter;
+    private readonly ITransactionRepository _transactionRepository;
     private readonly ILeaseService _leaseService;
 
     public ImportOfxFileHandler(
@@ -33,7 +33,7 @@ public class ImportOfxFileHandler : IImportOfxFileHandler
         IOptions<ImportSettings> importSettings,
         IValidator<OfxTransactionDto> transactionValidator,
         IDateTimeProvider dateTimeProvider,
-        ITransactionInserter transactionInserter,
+        ITransactionRepository transactionRepository,
         ILeaseService leaseService)
     {
         _parser = parser ?? throw new ArgumentNullException(nameof(parser));
@@ -43,7 +43,7 @@ public class ImportOfxFileHandler : IImportOfxFileHandler
         _importSettings = importSettings.Value ?? throw new ArgumentNullException(nameof(importSettings));
         _transactionValidator = transactionValidator ?? throw new ArgumentNullException(nameof(transactionValidator));
         _dateTimeProvider = dateTimeProvider ?? throw new ArgumentNullException(nameof(dateTimeProvider));
-        _transactionInserter = transactionInserter ?? throw new ArgumentNullException(nameof(transactionInserter));
+        _transactionRepository = transactionRepository ?? throw new ArgumentNullException(nameof(transactionRepository));
         _leaseService = leaseService ?? throw new ArgumentNullException(nameof(leaseService));
     }
     
@@ -99,7 +99,7 @@ public class ImportOfxFileHandler : IImportOfxFileHandler
                 continue;
             }
             await _leaseService.ValidateAndExtendLeaseAsync(command.FileName, leaseId, TimeSpan.FromMinutes(1));
-            var bulkResult = await _transactionInserter.BulkInsertCopyAsync(batch, cancellationToken);
+            var bulkResult = await _transactionRepository.BulkInsertCopyAsync(batch, cancellationToken);
             importedCount += bulkResult.InsertedCount;
             skippedDuplicateCount += bulkResult.SkippedDuplicateCount;
             batch.Clear();
@@ -108,7 +108,7 @@ public class ImportOfxFileHandler : IImportOfxFileHandler
         if (batch.Count > 0)
         {
             await _leaseService.ValidateAndExtendLeaseAsync(command.FileName, leaseId, TimeSpan.FromMinutes(1));
-            var bulkResult = await _transactionInserter.BulkInsertCopyAsync(batch, cancellationToken);
+            var bulkResult = await _transactionRepository.BulkInsertCopyAsync(batch, cancellationToken);
             importedCount += bulkResult.InsertedCount;
             skippedDuplicateCount += bulkResult.SkippedDuplicateCount;
         }
