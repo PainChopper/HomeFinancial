@@ -5,7 +5,7 @@ namespace HomeFinancial.Domain.Entities;
 /// <summary>
 /// Категория финансовой транзакции
 /// </summary>
-public record TransactionCategory : Entity
+public class TransactionCategory : Entity
 {
     /// <summary>
     /// Название категории

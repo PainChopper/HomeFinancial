@@ -3,7 +3,7 @@ namespace HomeFinancial.Domain.Common;
 /// <summary>
 /// Базовый класс для всех сущностей домена
 /// </summary>
-public abstract record Entity : IEntity
+public abstract class Entity : IEntity
 {
     /// <summary>
     /// Идентификатор
