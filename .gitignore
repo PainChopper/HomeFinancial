@@ -26,11 +26,14 @@ artifacts/
 
 # VSCode
 .vscode/
+*.*~
 
 # Logs
 *.log
 *.txt
 
+# Исключение финансовых файлов
+*.ofx
 
 # OS generated
 .DS_Store

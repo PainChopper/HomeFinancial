@@ -1,6 +1,12 @@
-using Microsoft.Extensions.Logging;
-using HomeFinancial.OfxParser;
+using HomeFinancial.Application.Common;
+using HomeFinancial.Domain.Entities;
 using HomeFinancial.Domain.Repositories;
+using HomeFinancial.OfxParser;
+using FluentValidation;
+using HomeFinancial.Application.Dtos;
+using HomeFinancial.Application.Interfaces;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace HomeFinancial.Application.UseCases.ImportOfxFile;
 
@@ -10,223 +16,141 @@ namespace HomeFinancial.Application.UseCases.ImportOfxFile;
 public class ImportOfxFileHandler : IImportOfxFileHandler
 {
     private readonly IOfxParser _parser;
-    private readonly ITransactionRepository _transactionRepository;
     private readonly IFileRepository _fileRepository;
-    private readonly ILogger<ImportOfxFileHandler> _logger;
+    private readonly ICategoryRepository _categoryRepository;
+    private readonly ILogger _logger;
+    private readonly ImportSettings _importSettings;
+    private readonly IValidator<OfxTransactionDto> _transactionValidator;
+    private readonly IDateTimeProvider _dateTimeProvider;
+    private readonly ITransactionInserter _transactionInserter;
+    private readonly ILeaseService _leaseService;
 
     public ImportOfxFileHandler(
         IOfxParser parser,
-        ITransactionRepository transactionRepository,
         IFileRepository fileRepository,
-        ILogger<ImportOfxFileHandler> logger)
+        ICategoryRepository categoryRepository,
+        ILogger<ImportOfxFileHandler> logger,
+        IOptions<ImportSettings> importSettings,
+        IValidator<OfxTransactionDto> transactionValidator,
+        IDateTimeProvider dateTimeProvider,
+        ITransactionInserter transactionInserter,
+        ILeaseService leaseService)
     {
-        _parser = parser;
-        _transactionRepository = transactionRepository;
-        _fileRepository = fileRepository;
-        _logger = logger;
+        _parser = parser ?? throw new ArgumentNullException(nameof(parser));
+        _fileRepository = fileRepository ?? throw new ArgumentNullException(nameof(fileRepository));
+        _categoryRepository = categoryRepository ?? throw new ArgumentNullException(nameof(categoryRepository));
+        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        _importSettings = importSettings.Value ?? throw new ArgumentNullException(nameof(importSettings));
+        _transactionValidator = transactionValidator ?? throw new ArgumentNullException(nameof(transactionValidator));
+        _dateTimeProvider = dateTimeProvider ?? throw new ArgumentNullException(nameof(dateTimeProvider));
+        _transactionInserter = transactionInserter ?? throw new ArgumentNullException(nameof(transactionInserter));
+        _leaseService = leaseService ?? throw new ArgumentNullException(nameof(leaseService));
     }
-
-    /// <summary>
-    /// Импортирует OFX-файл
-    /// </summary>
-    public async Task HandleAsync(ImportOfxFileCommand command, CancellationToken cancellationToken = default)
+    
+    /// <inheritdoc />
+    public async Task<ApiResponse<ImportOfxFileResult>> HandleAsync(ImportOfxFileCommand command, CancellationToken cancellationToken = default)
     {
         _logger.LogInformation("Импорт OFX-файла: {FileName}", command.FileName);
 
-        try
+        var leaseId = await _leaseService.AcquireLeaseAsync(command.FileName, TimeSpan.FromMinutes(1));
+        
+        var importedFile = await CreateFile(command.FileName, cancellationToken, leaseId);
+
+        // Пакет DTO для пакетной вставки
+        var batch = new List<TransactionInsertDto>(_importSettings.BatchSize);
+
+        var totalCount = 0;
+        var importedCount = 0;
+        var duplicatesCount = 0;
+        var errorCount = 0;
+
+        // Потоковая обработка транзакций
+        var transactions = _parser.ParseOfxFile(command.FileStream);
+
+        foreach (var t in transactions)
         {
-            // Получаем/создаём запись о файле и получаем его Id
-            var importedFile = await _fileRepository.GetByFileNameAsync(command.FileName);
-            if (importedFile == null)
+            totalCount++;
+
+            // Валидация транзакции через FluentValidation
+            var validationResult = await _transactionValidator.ValidateAsync(t, cancellationToken);
+            if (!validationResult.IsValid)
             {
-                importedFile = new Domain.Entities.ImportedFile(command.FileName)
-                {
-                    ImportedAt = DateTime.UtcNow,
-                    Status = Domain.Entities.ImportedFileStatus.Processing
-                };
-                await _fileRepository.CreateAsync(importedFile, cancellationToken);
-            }
-            else
-            {
-                // Если файл уже существует, обновляем его статус
-                importedFile.Status = Domain.Entities.ImportedFileStatus.Processing;
-                await _fileRepository.UpdateAsync(importedFile, cancellationToken);
-            }
-            int fileId = importedFile.Id;
-
-            // Размер пакета для обработки транзакций
-            const int batchSize = 100;
-            
-            // Пакеты для доходов и расходов
-            var incomeBatch = new List<IncomeTransactionDto>(batchSize);
-            var expenseBatch = new List<ExpenseTransactionDto>(batchSize);
-            
-            // Счетчики и ошибки
-            var errors = new List<string>();
-            var totalCount = 0;
-            var incomeCount = 0;
-            var expenseCount = 0;
-            var processedCount = 0;
-
-            // Потоковая обработка транзакций
-            foreach (var t in _parser.ParseOfxFile(command.FileStream))
-            {
-                totalCount++;
-
-                // Валидация транзакции через отдельный валидатор
-                var validation = OfxTransactionValidator.Validate(t);
-                if (!validation.IsValid)
-                {
-                    foreach (var err in validation.Errors)
-                    {
-                        _logger.LogWarning(err);
-                        errors.Add(err);
-                    }
-                    continue;
-                }
-
-                // Классификация и добавление в соответствующий пакет
-                switch (t.Amount)
-                {
-                    case > 0:
-                        var incomeDto = new IncomeTransactionDto
-                        {
-                            TranId = t.TranId,
-                            TranDate = t.TranDate,
-                            Category = t.Category,
-                            Description = t.Description,
-                            Amount = t.Amount.Value,
-                            FileId = fileId
-                        };
-                        incomeBatch.Add(incomeDto);
-                        incomeCount++;
-                        
-                        // Если пакет заполнен, сохраняем и очищаем
-                        if (incomeBatch.Count >= batchSize)
-                        {
-                            await SaveIncomeBatchAsync(incomeBatch, cancellationToken);
-                            processedCount += incomeBatch.Count;
-                            incomeBatch.Clear();
-                            
-                            // Логируем прогресс
-                            _logger.LogInformation("Обработано транзакций: {ProcessedCount}/{TotalCount}", 
-                                processedCount, totalCount);
-                        }
-                        break;
-                        
-                    case < 0:
-                        var expenseDto = new ExpenseTransactionDto
-                        {
-                            TranId = t.TranId,
-                            TranDate = t.TranDate,
-                            Category = t.Category,
-                            Description = t.Description,
-                            Amount = -t.Amount.Value,
-                            FileId = fileId
-                        };
-                        expenseBatch.Add(expenseDto);
-                        expenseCount++;
-                        
-                        // Если пакет заполнен, сохраняем и очищаем
-                        if (expenseBatch.Count >= batchSize)
-                        {
-                            await SaveExpenseBatchAsync(expenseBatch, cancellationToken);
-                            processedCount += expenseBatch.Count;
-                            expenseBatch.Clear();
-                            
-                            // Логируем прогресс
-                            _logger.LogInformation("Обработано транзакций: {ProcessedCount}/{TotalCount}", 
-                                processedCount, totalCount);
-                        }
-                        break;
-                }
+                var errorList = string.Join(", ", validationResult.Errors.Select(e => e.ErrorMessage));
+                _logger.LogWarning("Транзакция [{TranId}] пропущена: {Errors}", t.TranId, errorList);
+                errorCount++;
+                continue;
             }
 
-            // Сохраняем оставшиеся транзакции
-            if (incomeBatch.Count > 0)
-            {
-                await SaveIncomeBatchAsync(incomeBatch, cancellationToken);
-                processedCount += incomeBatch.Count;
-            }
-            
-            if (expenseBatch.Count > 0)
-            {
-                await SaveExpenseBatchAsync(expenseBatch, cancellationToken);
-                processedCount += expenseBatch.Count;
-            }
+            // Определяем или создаём категорию и формируем DTO
+            var categoryId = await _categoryRepository.GetOrCreateCategoryIdAsync(t.Category!);
+            var dto = new TransactionInsertDto(
+                FileId: importedFile.Id,
+                FitId: t.TranId!,
+                Date: DateTime.SpecifyKind(t.TranDate!.Value, DateTimeKind.Utc),
+                Amount: t.Amount!.Value,
+                Description: t.Description!,
+                CategoryId: categoryId
+            );
 
-            // Обновляем статус файла на "Обработан"
-            importedFile.Status = Domain.Entities.ImportedFileStatus.Processed;
-            await _fileRepository.UpdateAsync(importedFile, cancellationToken);
+            batch.Add(dto);
 
-            // Логируем итоговую информацию
-            _logger.LogInformation("Импорт завершен. Всего транзакций: {TotalCount}", totalCount);
-            _logger.LogInformation("Поступлений: {IncomeCount}, Трат: {ExpenseCount}", incomeCount, expenseCount);
-            
-            if (errors.Count > 0)
+            if (batch.Count < _importSettings.BatchSize)
             {
-                _logger.LogWarning("Ошибки при обработке файла: {Errors}", string.Join("; ", errors));
+                continue;
             }
+            await _leaseService.ValidateAndExtendLeaseAsync(command.FileName, leaseId, TimeSpan.FromMinutes(1));
+            var bulkResult = await _transactionInserter.BulkInsertCopyAsync(batch, cancellationToken);
+            importedCount += bulkResult.Inserted;
+            duplicatesCount += bulkResult.Duplicates;
+            batch.Clear();
         }
-        catch (Exception ex)
+
+        if (batch.Count > 0)
         {
-            _logger.LogError(ex, "Ошибка при импорте файла {FileName}", command.FileName);
-            
-            // Обновляем статус файла на "Ошибка"
-            var errorFile = await _fileRepository.GetByFileNameAsync(command.FileName);
-            if (errorFile != null)
-            {
-                errorFile.Status = Domain.Entities.ImportedFileStatus.Error;
-                await _fileRepository.UpdateAsync(errorFile, cancellationToken);
-            }
-            
-            throw; // Пробрасываем исключение дальше
+            await _leaseService.ValidateAndExtendLeaseAsync(command.FileName, leaseId, TimeSpan.FromMinutes(1));
+            var bulkResult = await _transactionInserter.BulkInsertCopyAsync(batch, cancellationToken);
+            importedCount += bulkResult.Inserted;
+            duplicatesCount += bulkResult.Duplicates;
         }
+
+        importedFile.Status = BankFileStatus.Completed;
+        await _fileRepository.UpdateAsync(importedFile, cancellationToken);
+        await _leaseService.ReleaseLeaseAsync(command.FileName, leaseId);
+        
+        _logger.LogInformation("Импорт OFX-файла {FileName} завершён. Всего транзакций: {TotalCount}, успешно импортировано: {ImportedCount}", command.FileName, totalCount, importedCount);
+
+        return new ApiResponse<ImportOfxFileResult>(true, new ImportOfxFileResult { TotalCount = totalCount, ImportedCount = importedCount, ErrorCount = errorCount, SkippedDuplicateCount = duplicatesCount });
     }
 
     /// <summary>
-    /// Сохраняет пакет доходных транзакций
+    /// Создаёт запись об импортируемом файле
     /// </summary>
-    private async Task SaveIncomeBatchAsync(List<IncomeTransactionDto> batch, CancellationToken cancellationToken)
+    private async Task<BankFile> CreateFile(string fileName,
+        CancellationToken cancellationToken, Guid leaseId)
     {
-        try
-        {
-            // TODO: Реализовать маппинг из DTO в сущности и сохранение через репозиторий
-            // var entities = batch.Select(dto => _mapper.Map<Income>(dto)).ToList();
-            // await _incomeRepository.AddRangeAsync(entities, cancellationToken);
-            
-            _logger.LogInformation("Сохранен пакет доходных транзакций: {Count}", batch.Count);
-            
-            // Пока используем заглушку
-            await Task.CompletedTask;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Ошибка при сохранении пакета доходных транзакций");
-            throw;
-        }
-    }
+        var importedFile = await _fileRepository.GetByFileNameAsync(fileName);
 
-    /// <summary>
-    /// Сохраняет пакет расходных транзакций
-    /// </summary>
-    private async Task SaveExpenseBatchAsync(List<ExpenseTransactionDto> batch, CancellationToken cancellationToken)
-    {
-        try
+        
+        if (importedFile != null)
         {
-            // TODO: Реализовать маппинг из DTO в сущности и сохранение через репозиторий
-            // var entities = batch.Select(dto => _mapper.Map<Expense>(dto)).ToList();
-            // await _expenseRepository.AddRangeAsync(entities, cancellationToken);
-            
-            _logger.LogInformation("Сохранен пакет расходных транзакций: {Count}", batch.Count);
-            
-            // Пока используем заглушку
-            await Task.CompletedTask;
+            if(importedFile.Status == BankFileStatus.Completed)
+            {
+                await _leaseService.ReleaseLeaseAsync(importedFile.FileName, leaseId);
+                throw new InvalidOperationException(
+                    $"Файл с именем '{importedFile.FileName}' уже успешно импортирован и не может быть повторно загружен.");
+            }
+
+            _logger.LogWarning("Удаление ранее импортированного файла с именем '{FileName}' и статусом {Status}", importedFile.FileName, importedFile.Status);
+            await _fileRepository.DeleteAsync(importedFile.Id, cancellationToken);
         }
-        catch (Exception ex)
+        
+        importedFile = new BankFile
         {
-            _logger.LogError(ex, "Ошибка при сохранении пакета расходных транзакций");
-            throw;
-        }
+            FileName = fileName,
+            ImportedAt = _dateTimeProvider.UtcNow,
+            Status = BankFileStatus.InProgress
+        };
+        
+        return await _fileRepository.CreateAsync(importedFile, cancellationToken);
     }
 }

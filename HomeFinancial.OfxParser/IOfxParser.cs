@@ -10,5 +10,5 @@ public interface IOfxParser
     /// </summary>
     /// <param name="stream">Поток OFX-файла</param>
     /// <returns>Перечисление транзакций</returns>
-    IEnumerable<OfxTransaction> ParseOfxFile(Stream stream);
+    IEnumerable<OfxTransactionDto> ParseOfxFile(Stream stream);
 }

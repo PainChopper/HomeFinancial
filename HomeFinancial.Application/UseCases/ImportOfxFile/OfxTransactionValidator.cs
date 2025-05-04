@@ -1,31 +1,24 @@
-using System.Collections.Generic;
+using FluentValidation;
 using HomeFinancial.OfxParser;
 
-namespace HomeFinancial.Application.UseCases.ImportOfxFile
+namespace HomeFinancial.Application.UseCases.ImportOfxFile;
+
+/// <summary>
+/// FluentValidation-валидатор для OFX-транзакции
+/// </summary>
+public class OfxTransactionValidator : AbstractValidator<OfxTransactionDto>
 {
-    /// <summary>
-    /// Валидатор OFX-транзакции для импорта
-    /// </summary>
-    public class TransactionValidationResult
+    public OfxTransactionValidator()
     {
-        public bool IsValid => Errors.Count == 0;
-        public List<string> Errors { get; } = new();
-    }
-
-    public static class OfxTransactionValidator
-    {
-        public static TransactionValidationResult Validate(OfxTransaction t)
-        {
-            var result = new TransactionValidationResult();
-
-            if (t.Amount == null)
-                result.Errors.Add($"Пропущена транзакция без суммы: {t.TranId}");
-            if (string.IsNullOrWhiteSpace(t.Description))
-                result.Errors.Add($"Пропущена транзакция без описания: {t.TranId}");
-            if (string.IsNullOrWhiteSpace(t.Category))
-                result.Errors.Add($"Пропущена транзакция без категории: {t.TranId}");
-
-            return result;
-        }
+        RuleFor(t => t.TranId)
+            .NotEmpty().WithMessage(t => $"отсутствует идентификатор транзакции");            
+        RuleFor(t => t.Amount)
+            .NotNull().WithMessage(t => $"отсутствует сумма");
+        RuleFor(t => t.Amount)
+            .NotEqual(0).WithMessage(t => $"нулевая сумма");
+        RuleFor(t => t.Description)
+            .NotEmpty().WithMessage(t => $"отсутствует описание");
+        RuleFor(t => t.Category)
+            .NotEmpty().WithMessage(t => $"отсутствует категория");
     }
 }

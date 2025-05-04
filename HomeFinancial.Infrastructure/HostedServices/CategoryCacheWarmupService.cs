@@ -1,0 +1,41 @@
+using HomeFinancial.Application.Common;
+using HomeFinancial.Domain.Repositories;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
+
+namespace HomeFinancial.Infrastructure.HostedServices;
+
+/// <summary>
+/// HostedService для прогрева кэша категорий в Redis.
+/// </summary>
+public class CategoryCacheWarmupService : IHostedService
+{
+    private const string CategoriesHashKey = "Categories";
+
+    private readonly IServiceProvider _serviceProvider;
+    private readonly ILogger _logger;
+
+    public CategoryCacheWarmupService(IServiceProvider serviceProvider, ILogger<CategoryCacheWarmupService> logger)
+    {
+        _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
+        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+    }
+
+    public async Task StartAsync(CancellationToken cancellationToken)
+    {
+        using var scope = _serviceProvider.CreateScope();
+        var cache = scope.ServiceProvider.GetRequiredService<ICacheService>();
+        var repository = scope.ServiceProvider.GetRequiredService<ICategoryRepository>();
+
+        var categories = await repository.GetAllAsync(cancellationToken);
+
+        foreach (var cat in categories)
+        {
+            await cache.HashSetAsync(CategoriesHashKey, cat.Name, cat.Id);
+            _logger.LogInformation("Прогрев кэша: категория {Name} -> {Id}", cat.Name, cat.Id);
+        }
+    }
+
+    public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+}

@@ -13,7 +13,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HomeFinancial.Application",
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "SolutionStaf", "SolutionStaf", "{993CAB94-72D5-479F-ACA4-89067348AAEE}"
 	ProjectSection(SolutionItems) = preProject
-		README.md = README.md
+		STAGE_RULES.md = STAGE_RULES.md
+		SOLUTION_RULES.md = SOLUTION_RULES.md
 	EndProjectSection
 EndProject
 Global

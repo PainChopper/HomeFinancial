@@ -5,22 +5,12 @@ namespace HomeFinancial.Domain.Repositories;
 /// <summary>
 /// Интерфейс репозитория для работы с категориями
 /// </summary>
-public interface ICategoryRepository : IGenericRepository<Category>
+public interface ICategoryRepository : IGenericRepository<TransactionCategory>
 {
     /// <summary>
-    /// Получает категорию по имени
+    /// Получает идентификатор категории по имени. Если категории с указанным именем нет, создаёт новую.
     /// </summary>
-    /// <param name="name">Имя категории</param>
-    /// <returns>Категория или null, если категория не найдена</returns>
-    Task<Category?> GetByNameAsync(string name);
-
-    /// <summary>
-    /// Получает существующую категорию по имени или создает новую
-    /// </summary>
-    /// <param name="name">Имя категории</param>
-    /// <param name="cancellationToken"></param>
-    /// <returns>Существующая или новая категория</returns>
-    Task<Category> GetOrCreateAsync(string name, CancellationToken cancellationToken);
-
-    Task DeleteAsync(Category category, CancellationToken cancellationToken);
+    /// <param name="categoryName">Название категории</param>
+    /// <returns>Идентификатор существующей или только что созданной категории</returns>
+    Task<int> GetOrCreateCategoryIdAsync(string categoryName);
 }

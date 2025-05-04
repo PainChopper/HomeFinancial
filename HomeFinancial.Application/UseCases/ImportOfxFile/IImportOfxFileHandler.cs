@@ -1,3 +1,5 @@
+using HomeFinancial.Application.Common;
+
 namespace HomeFinancial.Application.UseCases.ImportOfxFile;
 
 /// <summary>
@@ -5,5 +7,11 @@ namespace HomeFinancial.Application.UseCases.ImportOfxFile;
 /// </summary>
 public interface IImportOfxFileHandler
 {
-    Task HandleAsync(ImportOfxFileCommand command, CancellationToken cancellationToken = default);
+    /// <summary>
+    /// Обработчик импорта OFX-файла
+    /// </summary>
+    /// <param name="command">Команда на импорт OFX-файла</param>
+    /// <param name="cancellationToken">Токен отмены</param>
+    /// <returns>Результат импорта OFX-файла</returns>
+    Task<ApiResponse<ImportOfxFileResult>> HandleAsync(ImportOfxFileCommand command, CancellationToken cancellationToken = default);
 }
