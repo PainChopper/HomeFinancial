@@ -32,6 +32,8 @@ artifacts/
 *.log
 *.txt
 
+# Исключение финансовых файлов
+*.ofx
 
 # OS generated
 .DS_Store
