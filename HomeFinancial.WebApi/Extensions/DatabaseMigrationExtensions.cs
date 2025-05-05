@@ -14,11 +14,14 @@ public static class DatabaseMigrationExtensions
         {
             logger.LogInformation("Применение миграций базы данных...");
             db.Database.Migrate();
+            
+            logger.LogInformation("Удаляем все файлы...");
+            db.BankFiles.ExecuteDelete();
         }
         catch (Exception ex)
         {
             logger.LogCritical(ex, "Ошибка при применении миграций базы данных.");
-            throw; // Прерываем запуск, чтобы не работать на неконсистентной схеме
+            throw;
         }
     }
 }

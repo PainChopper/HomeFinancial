@@ -12,7 +12,7 @@ namespace HomeFinancial.Application.UseCases.ImportOfxFile;
 
 /// <summary>
 /// Обработчик сценария импорта OFX-файла
-/// </summary>
+/// </summary> 
 public class ImportOfxFileHandler : IImportOfxFileHandler
 {
     private readonly IOfxParser _parser;
@@ -65,9 +65,10 @@ public class ImportOfxFileHandler : IImportOfxFileHandler
         var errorCount = 0;
 
         // Потоковая обработка транзакций
-        var transactions = _parser.ParseOfxFile(command.FileStream);
+        var ofxFileAsync = await _parser.ParseOfxFileAsync(command.FileStream, cancellationToken);
+        var transactions = ofxFileAsync.Transactions;
 
-        foreach (var t in transactions)
+        await foreach (var t in transactions.WithCancellation(cancellationToken))
         {
             totalCount++;
 
@@ -82,13 +83,13 @@ public class ImportOfxFileHandler : IImportOfxFileHandler
             }
 
             // Определяем или создаём категорию и формируем DTO
-            var categoryId = await _categoryRepository.GetOrCreateCategoryIdAsync(t.Category!);
+            var categoryId = await _categoryRepository.GetOrCreateCategoryIdAsync(t.Category);
             var dto = new TransactionInsertDto(
                 FileId: importedFile.Id,
-                FitId: t.TranId!,
-                Date: DateTime.SpecifyKind(t.TranDate!.Value, DateTimeKind.Utc),
-                Amount: t.Amount!.Value,
-                Description: t.Description!,
+                FitId: t.TranId,
+                Date: DateTime.SpecifyKind(t.TranDate, DateTimeKind.Utc),
+                Amount: t.Amount,
+                Description: t.Description,
                 CategoryId: categoryId
             );
 
