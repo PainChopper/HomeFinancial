@@ -120,7 +120,12 @@ public class OfxParser : IOfxParser
                         {
                             _logger.LogWarning("Пропущена транзакция с FITID={FitId}: некорректная сумма '{TrnAmt}'", fitId, trnAmt);
                             break;
-                        }                        
+                        }
+                        if (parsedAmount == 0)
+                        {
+                            _logger.LogWarning("Пропущена транзакция с FITID={FitId}: нулевая сумма '{TrnAmt}'", fitId, trnAmt);
+                            break;
+                        }
                         if (string.IsNullOrWhiteSpace(memo))
                         {
                             _logger.LogWarning("Пропущена транзакция с FITID={FitId}: отсутствует MEMO", fitId);
