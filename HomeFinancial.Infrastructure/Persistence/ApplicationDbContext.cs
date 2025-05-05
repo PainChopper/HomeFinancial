@@ -16,9 +16,8 @@ public class ApplicationDbContext : DbContext
     public DbSet<BankFile> BankFiles { get; set; } = null!;
     public DbSet<Bank> Banks { get; set; } = null!;
     public DbSet<BankAccount> BanksAccounts { get; set; } = null!;
-
-    public DbSet<FileTransaction> FileTransactions { get; set; } = null!;
-    public DbSet<TransactionCategory> TransactionCategories { get; set; } = null!;
+    public DbSet<StatementEntry> StatementEntries { get; set; } = null!;
+    public DbSet<EntryCategory> EntryCategories { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder builder)
     {

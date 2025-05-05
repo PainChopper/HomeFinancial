@@ -6,7 +6,7 @@ namespace HomeFinancial.Application.UseCases.ImportOfxFile;
 /// <summary>
 /// FluentValidation-валидатор для OFX-транзакции
 /// </summary>
-public class OfxTransactionValidator : AbstractValidator<OfxTransactionDto>
+public class OfxTransactionValidator : AbstractValidator<TransactionDto>
 {
     public OfxTransactionValidator()
     {

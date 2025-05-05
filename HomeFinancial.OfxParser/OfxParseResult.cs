@@ -6,6 +6,6 @@ namespace HomeFinancial.OfxParser;
 /// <param name="BankAccount">Идентификаторы банка и счета</param>
 /// <param name="Transactions">Транзакции из OFX-файла</param>
 public record OfxParseResult(
-    OfxBankAccountDto BankAccount,
-    IAsyncEnumerable<OfxTransactionDto> Transactions
+    BankAccountDto BankAccount,
+    IAsyncEnumerable<TransactionDto> Transactions
 );

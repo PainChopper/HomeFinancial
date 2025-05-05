@@ -6,7 +6,7 @@ namespace HomeFinancial.Domain.Entities;
 /// <summary>
 /// Банковская транзакция
 /// </summary>
-public class FileTransaction : Entity
+public class StatementEntry : Entity
 {
     /// <summary>
     /// Уникальный идентификатор транзакции в банковской системе (Financial Institution Transaction ID)
@@ -36,7 +36,7 @@ public class FileTransaction : Entity
     /// <summary>
     /// Категория транзакции
     /// </summary>
-    public required TransactionCategory Category { get; init; }
+    public required EntryCategory Category { get; init; }
 
     /// <summary>
     /// Идентификатор импортированного файла

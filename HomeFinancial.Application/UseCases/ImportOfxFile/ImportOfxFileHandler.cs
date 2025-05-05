@@ -17,10 +17,10 @@ public class ImportOfxFileHandler : IImportOfxFileHandler
 {
     private readonly IOfxParser _parser;
     private readonly IFileRepository _fileRepository;
-    private readonly ICategoryRepository _categoryRepository;
+    private readonly IEntryCategoryRepository _entryCategoryRepository;
     private readonly ILogger _logger;
     private readonly ImportSettings _importSettings;
-    private readonly IValidator<OfxTransactionDto> _transactionValidator;
+    private readonly IValidator<TransactionDto> _transactionValidator;
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly ITransactionInserter _transactionInserter;
     private readonly ILeaseService _leaseService;
@@ -28,17 +28,17 @@ public class ImportOfxFileHandler : IImportOfxFileHandler
     public ImportOfxFileHandler(
         IOfxParser parser,
         IFileRepository fileRepository,
-        ICategoryRepository categoryRepository,
+        IEntryCategoryRepository entryCategoryRepository,
         ILogger<ImportOfxFileHandler> logger,
         IOptions<ImportSettings> importSettings,
-        IValidator<OfxTransactionDto> transactionValidator,
+        IValidator<TransactionDto> transactionValidator,
         IDateTimeProvider dateTimeProvider,
         ITransactionInserter transactionInserter,
         ILeaseService leaseService)
     {
         _parser = parser ?? throw new ArgumentNullException(nameof(parser));
         _fileRepository = fileRepository ?? throw new ArgumentNullException(nameof(fileRepository));
-        _categoryRepository = categoryRepository ?? throw new ArgumentNullException(nameof(categoryRepository));
+        _entryCategoryRepository = entryCategoryRepository ?? throw new ArgumentNullException(nameof(entryCategoryRepository));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _importSettings = importSettings.Value ?? throw new ArgumentNullException(nameof(importSettings));
         _transactionValidator = transactionValidator ?? throw new ArgumentNullException(nameof(transactionValidator));
@@ -83,7 +83,7 @@ public class ImportOfxFileHandler : IImportOfxFileHandler
             }
 
             // Определяем или создаём категорию и формируем DTO
-            var categoryId = await _categoryRepository.GetOrCreateCategoryIdAsync(t.Category);
+            var categoryId = await _entryCategoryRepository.GetOrCreateCategoryIdAsync(t.Category);
             var dto = new TransactionInsertDto(
                 FileId: importedFile.Id,
                 FitId: t.TranId,

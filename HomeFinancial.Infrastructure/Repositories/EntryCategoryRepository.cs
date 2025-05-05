@@ -10,14 +10,14 @@ using Microsoft.Extensions.Logging;
 namespace HomeFinancial.Infrastructure.Repositories;
 
 // Репозиторий для работы с категориями, кэшируем их в одном Redis-хэше
-public sealed class CategoryRepository : GenericRepository<TransactionCategory>, ICategoryRepository
+public sealed class EntryCategoryRepository : GenericRepository<EntryCategory>, IEntryCategoryRepository
 {
     private const string CategoriesHashKey = "Categories";
     private readonly RetryPolicyHelper _retryPolicyHelper;
     private readonly ICacheService      _cacheService;
 
-    public CategoryRepository(ApplicationDbContext dbContext,
-                              ILogger<CategoryRepository> logger,
+    public EntryCategoryRepository(ApplicationDbContext dbContext,
+                              ILogger<EntryCategoryRepository> logger,
                               RetryPolicyHelper retryPolicyHelper,
                               ICacheService cacheService)
         : base(dbContext)

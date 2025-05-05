@@ -1,6 +1,6 @@
 namespace HomeFinancial.OfxParser;
 
-public record OfxTransactionDto(
+public record TransactionDto(
     string TranId,
     DateTime TranDate,
     string Category,

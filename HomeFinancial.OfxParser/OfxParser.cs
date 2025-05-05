@@ -40,7 +40,7 @@ public class OfxParser : IOfxParser
     /// <summary>
     /// Асинхронно получает информацию о банке и счете из OFX-файла
     /// </summary>
-    private static async Task<OfxBankAccountDto> GetBankAccountInfoAsync(XmlReader reader)
+    private static async Task<BankAccountDto> GetBankAccountInfoAsync(XmlReader reader)
     {
         string? bankId = null;
         string? accountId = null;
@@ -58,7 +58,7 @@ public class OfxParser : IOfxParser
                     accountId = await reader.ReadElementTextAndStayOnEndTagAsync();
                     break;
                 case (XmlNodeType.EndElement, "BANKACCTFROM"):
-                    return new OfxBankAccountDto(
+                    return new BankAccountDto(
                         bankId    ?? throw new InvalidOperationException("Не найден BANKID в секции BANKACCTFROM"),
                         accountId ?? throw new InvalidOperationException("Не найден ACCTID в секции BANKACCTFROM")
                         );
@@ -70,7 +70,7 @@ public class OfxParser : IOfxParser
     /// <summary>
     /// Асинхронно получает транзакции из OFX-файла в виде ленивой async коллекции
     /// </summary>
-    private async IAsyncEnumerable<OfxTransactionDto> GetTransactionsAsync(XmlReader reader, [EnumeratorCancellation] CancellationToken cancellationToken)
+    private async IAsyncEnumerable<TransactionDto> GetTransactionsAsync(XmlReader reader, [EnumeratorCancellation] CancellationToken cancellationToken)
     {
         while (await reader.ReadAsync())
         {
@@ -132,7 +132,7 @@ public class OfxParser : IOfxParser
                             break;
                         }
                         
-                        yield return new OfxTransactionDto(
+                        yield return new TransactionDto(
                             TranId: fitId,
                             TranDate: parsedDate,
                             Category: memo,

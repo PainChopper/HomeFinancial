@@ -4,9 +4,9 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace HomeFinancial.Infrastructure.Configurations;
 
-public class BankTransactionConfiguration : IEntityTypeConfiguration<FileTransaction>
+public class StatementEntryConfiguration : IEntityTypeConfiguration<StatementEntry>
 {
-    public void Configure(EntityTypeBuilder<FileTransaction> builder)
+    public void Configure(EntityTypeBuilder<StatementEntry> builder)
     {
         builder.HasKey(t => t.Id);
         builder.Metadata.GetProperties()

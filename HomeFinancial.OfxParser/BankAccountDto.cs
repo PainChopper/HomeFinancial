@@ -5,7 +5,7 @@ namespace HomeFinancial.OfxParser;
 /// </summary>
 /// <param name="BankId">Идентификатор банка</param>
 /// <param name="AccountId">Идентификатор счета</param>
-public record OfxBankAccountDto(
+public record BankAccountDto(
     string BankId,
     string AccountId
 );

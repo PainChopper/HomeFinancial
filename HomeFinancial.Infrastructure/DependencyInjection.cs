@@ -42,13 +42,13 @@ public static class DependencyInjection
                 
         // Регистрация репозиториев
         services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
-        services.AddScoped<ICategoryRepository, CategoryRepository>();
+        services.AddScoped<IEntryCategoryRepository, EntryCategoryRepository>();
         services.AddScoped<IFileRepository, FileRepository>();
         services.AddScoped<ITransactionInserter, TransactionInserter>();
 
        
         // Hosted service для прогрева кэша категорий
-        services.AddHostedService<CategoryCacheWarmupService>();
+        services.AddHostedService<EntryCategoryCacheWarmupService>();
 
         return services;
     }
