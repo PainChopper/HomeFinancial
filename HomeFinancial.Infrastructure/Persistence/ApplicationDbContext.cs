@@ -13,14 +13,13 @@ public class ApplicationDbContext : DbContext
     {
     }
 
-    /// <summary>
-    /// Импортированные файлы
-    /// </summary>
     public DbSet<BankFile> BankFiles { get; set; } = null!;
+    public DbSet<Bank> Banks { get; set; } = null!;
+    public DbSet<BankAccount> BanksAccounts { get; set; } = null!;
+
     public DbSet<FileTransaction> FileTransactions { get; set; } = null!;
     public DbSet<TransactionCategory> TransactionCategories { get; set; } = null!;
 
-    // Конфигурация моделей
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
