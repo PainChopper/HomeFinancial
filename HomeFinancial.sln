@@ -15,7 +15,10 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "SolutionStaf", "SolutionSta
 	ProjectSection(SolutionItems) = preProject
 		STAGE_RULES.md = STAGE_RULES.md
 		SOLUTION_RULES.md = SOLUTION_RULES.md
+		.windsurfrules = .windsurfrules
 	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HomeFinancial.OfxParser.Tests", "HomeFinancial.OfxParser.Tests\HomeFinancial.OfxParser.Tests.csproj", "{3F7B1B73-370E-4738-BC74-E67BC38FD949}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -43,5 +46,9 @@ Global
 		{C58E11E0-F03E-4099-994C-7CF79BE378ED}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C58E11E0-F03E-4099-994C-7CF79BE378ED}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C58E11E0-F03E-4099-994C-7CF79BE378ED}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3F7B1B73-370E-4738-BC74-E67BC38FD949}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3F7B1B73-370E-4738-BC74-E67BC38FD949}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3F7B1B73-370E-4738-BC74-E67BC38FD949}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3F7B1B73-370E-4738-BC74-E67BC38FD949}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

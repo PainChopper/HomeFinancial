@@ -1,188 +1,120 @@
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Xml;
-using System.Xml.Linq;
 using Microsoft.Extensions.Logging;
 
 namespace HomeFinancial.OfxParser;
 
-/// <summary>
-/// Реализация парсера OFX-файлов (асинхронная версия)
-/// </summary>
 public class OfxParser : IOfxParser
 {
-    private readonly ILogger _logger;
+    private readonly ILogger<OfxParser> _logger;
 
     public OfxParser(ILogger<OfxParser> logger)
     {
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
-    /// <summary>
-    /// Асинхронно читает OFX-файл из потока и возвращает результат парсинга.
-    /// Транзакции читаются лениво (async), без загрузки всего файла в память.
-    /// </summary>
-    public async Task<OfxParseResult> ParseOfxFileAsync(Stream stream, CancellationToken cancellationToken = default)
+    /// <inheritdoc />
+    public async IAsyncEnumerable<OfxAccountStatementDto> ParseStatementsAsync(Stream stream, [EnumeratorCancellation] CancellationToken ct = default)
     {
-        var reader = XmlReader.Create(stream, new XmlReaderSettings { IgnoreWhitespace = true, Async = true });
+        using var reader = XmlReader.Create(stream, new XmlReaderSettings {IgnoreWhitespace = true, Async = true });
 
-        // Переходим к корневому элементу
-        while (await reader.ReadAsync() && reader.NodeType != XmlNodeType.Element) 
-        {
-        }
+        await reader.SkipToElementAsync(OfxTag.Ofx, ct);
+        await reader.SkipToElementAsync(OfxTag.BankMsgsRsv1, ct);
 
-        var bankAccount = await GetBankAccountInfoAsync(reader);
-        var transactions = GetTransactionsAsync(reader, cancellationToken);
-
-        return new OfxParseResult(bankAccount, transactions);
-    }
-
-    /// <summary>
-    /// Асинхронно получает информацию о банке и счете из OFX-файла
-    /// </summary>
-    private static async Task<BankAccountDto> GetBankAccountInfoAsync(XmlReader reader)
-    {
-        string? bankId = null;
-        string? accountId = null;
-
-        while (await reader.ReadAsync() && reader.Name != "BANKACCTFROM"){}
+        var hasStatements  = false;
         
-        while (await reader.ReadAsync())
+        while (await reader.TrySkipToElementAsync(OfxTag.StmtTrnRs, ct))
         {
-            switch (reader.NodeType, reader.Name)
-            {
-                case (XmlNodeType.Element, "BANKID"):
-                    bankId = await reader.ReadElementTextAndStayOnEndTagAsync();
-                    break;
-                case (XmlNodeType.Element, "ACCTID"):
-                    accountId = await reader.ReadElementTextAndStayOnEndTagAsync();
-                    break;
-                case (XmlNodeType.EndElement, "BANKACCTFROM"):
-                    return new BankAccountDto(
-                        bankId    ?? throw new InvalidOperationException("Не найден BANKID в секции BANKACCTFROM"),
-                        accountId ?? throw new InvalidOperationException("Не найден ACCTID в секции BANKACCTFROM")
-                        );
-            }
+            hasStatements = true;
+            
+            await reader.SkipToElementAsync(OfxTag.StmTrs, ct);
+            await reader.SkipToElementAsync(OfxTag.BankAcctFrom, ct);
+            var bankId = await reader.ReadElementContentAsStringAsync(OfxTag.BankId, ct);
+            var accountId = await reader.ReadElementContentAsStringAsync(OfxTag.AcctId, ct);
+            var accountType = await reader.ReadElementContentAsStringAsync(OfxTag.AcctType, ct);
+
+            await reader.SkipToElementAsync(OfxTag.BankTranList, ct);
+            
+            yield return new OfxAccountStatementDto(
+                bankId,
+                accountId,
+                accountType,
+                ReadTransactionsAsync(reader, ct));
         }
-        throw new InvalidOperationException("Секция BANKACCTFROM не найдена или не завершена");
-    }
-    
-    /// <summary>
-    /// Асинхронно получает транзакции из OFX-файла в виде ленивой async коллекции
-    /// </summary>
-    private async IAsyncEnumerable<TransactionDto> GetTransactionsAsync(XmlReader reader, [EnumeratorCancellation] CancellationToken cancellationToken)
-    {
-        while (await reader.ReadAsync())
+        
+        if (!hasStatements)
         {
-            if (reader.NodeType != XmlNodeType.Element || reader.Name != "STMTTRN")
+            throw new InvalidDataException($"В банковском файле не найдено секций <{OfxTag.StmtTrnRs}>.");
+        }
+    }
+
+    /// <summary>
+    /// Читает транзакции из банковской выписки.
+    /// </summary>
+    /// <param name="reader">XML ридер</param>
+    /// <param name="ct">Токен отмены операции</param>
+    /// <returns>Асинхронный перечислитель транзакций</returns>
+    private async IAsyncEnumerable<OfxTransactionDto> ReadTransactionsAsync(XmlReader reader, [EnumeratorCancellation] CancellationToken ct = default)
+    {
+        while (await reader.TrySkipToElementAsync(OfxTag.StmtTrn, ct))
+        {
+            var trnType = await reader.ReadElementContentAsStringAsync(OfxTag.TrnType, ct);
+            var dtPosted = ParseDate(await reader.ReadElementContentAsStringAsync(OfxTag.DtPosted, ct));
+            var trnAmt = ParseAmount(await reader.ReadElementContentAsStringAsync(OfxTag.TrnAmt, ct));
+            var fitId = await reader.ReadElementContentAsStringAsync(OfxTag.FitId, ct);
+            var name = await reader.ReadElementContentAsStringAsync(OfxTag.Name, ct);
+            var memo = await reader.ReadElementContentAsStringAsync(OfxTag.Memo, ct);
+            
+            if (trnAmt is null)
             {
+                _logger.LogWarning("Пропущена транзакция с FITID={Id}: некорректная сумма '{TrnAmt}'", fitId, trnAmt);
                 continue;
+            }
+
+            if (dtPosted is null)
+            {
+                _logger.LogWarning("Пропущена транзакция с FITID={Id}: некорректная дата '{DtPosted}'", fitId, dtPosted);
+                continue;
+            }
+
+            yield return new OfxTransactionDto(
+                Id: fitId,
+                TranType: trnType,
+                TranDate: dtPosted.Value,
+                Category: memo,
+                Description: name,
+                Amount: trnAmt.Value
+            );
+        }
+
+        yield break;
+
+        decimal? ParseAmount(string amountString)
+        {
+            return !string.IsNullOrEmpty(amountString) &&
+                   decimal.TryParse(amountString.Replace('.', ','), 
+                       out var amount)
+                ? amount
+                : null;
+        }
+
+        DateTime? ParseDate(string dateString)
+        {
+            const string format = "yyyyMMddHHmmss.fff";
+            
+            if (string.IsNullOrEmpty(dateString) || dateString.Length < format.Length)
+            {
+                return null;
             }
             
-            string? fitId = null;
-            string? dtPosted = null;
-            string? memo = null;
-            string? name = null;
-            string? trnAmt = null;
-
-            while (await reader.ReadAsync())
-            {
-                cancellationToken.ThrowIfCancellationRequested();
-                switch (reader.NodeType, reader.Name)
-                {
-                    case (XmlNodeType.Element, "FITID"):
-                        fitId = await reader.ReadElementTextAndStayOnEndTagAsync();
-                        break;
-                    case (XmlNodeType.Element, "DTPOSTED"):
-                        dtPosted = await reader.ReadElementTextAndStayOnEndTagAsync();
-                        break;
-                    case (XmlNodeType.Element, "MEMO"):
-                        memo = await reader.ReadElementTextAndStayOnEndTagAsync();
-                        break;
-                    case (XmlNodeType.Element, "NAME"):
-                        name = await reader.ReadElementTextAndStayOnEndTagAsync();
-                        break;
-                    case (XmlNodeType.Element, "TRNAMT"):
-                        trnAmt = await reader.ReadElementTextAndStayOnEndTagAsync();
-                        break;
-                    case (XmlNodeType.EndElement, "STMTTRN"):
-                        if (string.IsNullOrWhiteSpace(fitId))
-                        {
-                            _logger.LogWarning("Пропущена транзакция: отсутствует FITID");
-                            break;
-                        }
-                        if (!TryParseOfxDate(dtPosted, fitId, out var parsedDate))
-                        {
-                            _logger.LogWarning("Пропущена транзакция с FITID={FitId}: некорректная дата '{DtPosted}'", fitId, dtPosted);
-                            break;
-                        }
-                        if (!decimal.TryParse(trnAmt, NumberStyles.Any, CultureInfo.InvariantCulture, out var parsedAmount))
-                        {
-                            _logger.LogWarning("Пропущена транзакция с FITID={FitId}: некорректная сумма '{TrnAmt}'", fitId, trnAmt);
-                            break;
-                        }
-                        if (parsedAmount == 0)
-                        {
-                            _logger.LogWarning("Пропущена транзакция с FITID={FitId}: нулевая сумма '{TrnAmt}'", fitId, trnAmt);
-                            break;
-                        }
-                        if (string.IsNullOrWhiteSpace(memo))
-                        {
-                            _logger.LogWarning("Пропущена транзакция с FITID={FitId}: отсутствует MEMO", fitId);
-                            break;
-                        }                        
-                        if (string.IsNullOrWhiteSpace(name))
-                        {
-                            _logger.LogWarning("Пропущена транзакция с FITID={FitId}: отсутствует NAME", fitId);
-                            break;
-                        }
-                        
-                        yield return new TransactionDto(
-                            TranId: fitId,
-                            TranDate: parsedDate,
-                            Category: memo,
-                            Description: name,
-                            Amount: parsedAmount
-                        );
-                        break;
-                }
-                if (reader is { NodeType: XmlNodeType.EndElement, Name: "STMTTRN" })
-                {
-                    break;
-                }
-            }
+            return DateTime.TryParseExact(dateString[..format.Length],
+                format,
+                CultureInfo.InvariantCulture,
+                DateTimeStyles.AssumeLocal,
+                out var date)
+                ? date
+                : null;
         }
-    }
-
-    private static readonly string[] OfxDateFormats = ["yyyyMMddHHmmss.fff", "yyyyMMddHHmmss"];
-
-    /// <summary>
-    /// Пробует разобрать дату OFX в нескольких форматах.
-    /// </summary>
-    private bool TryParseOfxDate(string? dtPostedRaw, string? fitId, out DateTime parsedDate)
-    {
-        parsedDate = default;
-        if (string.IsNullOrWhiteSpace(dtPostedRaw))
-        {
-            _logger.LogWarning("Значение DTPOSTED отсутствует или пустое для FITID: {FitId}", fitId);
-            return false;
-        }
-        foreach (var format in OfxDateFormats)
-        {
-            if (dtPostedRaw.Length < format.Length)
-            {
-                continue;
-            }
-            var candidate = dtPostedRaw[..format.Length];
-            if (!DateTime.TryParseExact(candidate, format, CultureInfo.InvariantCulture, DateTimeStyles.None, out var parsed))
-            {
-                continue;
-            }
-            _logger.LogDebug("Дата разобрана: {ParsedDate} (формат {Format})", parsed, format);
-            parsedDate = parsed;
-            return true;
-        }
-        _logger.LogWarning("Не удалось разобрать дату '{DtPostedRaw}' для FITID: {FitId}", dtPostedRaw, fitId);
-        return false;
     }
 }

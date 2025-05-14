@@ -1,8 +1,8 @@
 using System.Diagnostics;
+using Microsoft.Extensions.Logging;
 using Npgsql;
 using Polly;
 using Polly.Contrib.WaitAndRetry;
-using Microsoft.Extensions.Logging;
 
 namespace HomeFinancial.Infrastructure.Utils;
 
@@ -38,10 +38,10 @@ public class RetryPolicyHelper
             .Handle<PostgresException>(ex =>
                 ex.SqlState == "40001"    // serialization_failure
                 || ex.SqlState == "40P01" // deadlock_detected
-                || (ex.SqlState?.StartsWith("08") ?? false) // сбой соединения (class 08 - Connection Exception)
+                || ex.SqlState.StartsWith("08") // сбой соединения (class 08 - Connection Exception)
             ).WaitAndRetryAsync(
                 sleepDurations: Backoff.DecorrelatedJitterBackoffV2(medianFirstRetryDelay: TimeSpan.FromMilliseconds(200), retryCount: 5),
-                onRetry: (exception, delay, retryAttempt, context) =>
+                onRetry: (exception, delay, retryAttempt) =>
                 {
                     // Логируем информацию о неудачной попытке (на русском)
                     _logger.LogWarning("Попытка #{RetryAttempt} завершилась ошибкой SQLSTATE={SqlState}: {ErrorMessage}. Повтор через {Delay}.", retryAttempt, (exception as PostgresException)?.SqlState, exception.Message, delay);
@@ -60,7 +60,7 @@ public class RetryPolicyHelper
             .WaitAndRetryAsync(
                 retryCount: 1,
                 sleepDurationProvider: _ => TimeSpan.FromSeconds(5),   // повтор через 5 секунд
-                onRetry: (exception, delay, retryAttempt, context) =>
+                onRetry: (exception, delay) =>
                 {
                     _logger.LogWarning("Запрос был отменён (SQLSTATE 57014). Повторная попытка через {Delay}.", delay);
                     exceptions.Add(exception);

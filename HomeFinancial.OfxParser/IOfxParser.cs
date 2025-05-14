@@ -1,3 +1,5 @@
+using System.Runtime.CompilerServices;
+
 namespace HomeFinancial.OfxParser;
 
 /// <summary>
@@ -6,9 +8,10 @@ namespace HomeFinancial.OfxParser;
 public interface IOfxParser
 {
     /// <summary>
-    /// Читает OFX-файл из потока и возвращает перечисление транзакций.
+    /// Парсит все банковские выписки из OFX файла.
     /// </summary>
-    /// <param name="stream">Поток OFX-файла</param>
-    /// <returns>Перечисление транзакций</returns>
-    Task<OfxParseResult> ParseOfxFileAsync(Stream stream, CancellationToken cancellationToken = default);
+    /// <param name="stream">Поток с XML данными</param>
+    /// <param name="ct">Токен отмены операции</param>
+    /// <returns>Асинхронный перечислитель банковских выписок</returns>
+    IAsyncEnumerable<OfxAccountStatementDto> ParseStatementsAsync(Stream stream, [EnumeratorCancellation] CancellationToken ct = default);
 }

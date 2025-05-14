@@ -1,9 +1,7 @@
-namespace HomeFinancial.WebApi.Extensions;
-
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.DependencyInjection;
-using System.Linq;
 using HomeFinancial.Application.Common;
+using Microsoft.AspNetCore.Mvc;
+
+namespace HomeFinancial.WebApi.Extensions;
 
 /// <summary>
 /// Конфигурирует поведение API при некорректном состоянии модели.

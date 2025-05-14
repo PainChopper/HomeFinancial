@@ -22,13 +22,13 @@ public class EntryCategoryCacheWarmupService : IHostedService
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
-    public async Task StartAsync(CancellationToken cancellationToken)
+    public async Task StartAsync(CancellationToken ct)
     {
         using var scope = _serviceProvider.CreateScope();
         var cache = scope.ServiceProvider.GetRequiredService<ICacheService>();
         var repository = scope.ServiceProvider.GetRequiredService<IEntryCategoryRepository>();
 
-        var categories = await repository.GetAllAsync(cancellationToken);
+        var categories = await repository.GetAllAsync(ct);
 
         foreach (var cat in categories)
         {
@@ -37,5 +37,5 @@ public class EntryCategoryCacheWarmupService : IHostedService
         }
     }
 
-    public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+    public Task StopAsync(CancellationToken ct) => Task.CompletedTask;
 }

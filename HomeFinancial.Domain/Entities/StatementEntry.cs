@@ -1,5 +1,5 @@
-using JetBrains.Annotations;
 using HomeFinancial.Domain.Common;
+using JetBrains.Annotations;
 
 namespace HomeFinancial.Domain.Entities;
 

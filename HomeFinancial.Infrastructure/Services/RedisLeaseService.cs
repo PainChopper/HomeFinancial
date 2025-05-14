@@ -1,5 +1,5 @@
-using StackExchange.Redis;
 using HomeFinancial.Application.Interfaces;
+using StackExchange.Redis;
 
 namespace HomeFinancial.Infrastructure.Services;
 

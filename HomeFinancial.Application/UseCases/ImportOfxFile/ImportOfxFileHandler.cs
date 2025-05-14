@@ -1,10 +1,9 @@
+using FluentValidation;
 using HomeFinancial.Application.Common;
+using HomeFinancial.Application.Interfaces;
 using HomeFinancial.Domain.Entities;
 using HomeFinancial.Domain.Repositories;
 using HomeFinancial.OfxParser;
-using FluentValidation;
-using HomeFinancial.Application.Dtos;
-using HomeFinancial.Application.Interfaces;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
@@ -20,7 +19,7 @@ public class ImportOfxFileHandler : IImportOfxFileHandler
     private readonly IEntryCategoryRepository _entryCategoryRepository;
     private readonly ILogger _logger;
     private readonly ImportSettings _importSettings;
-    private readonly IValidator<TransactionDto> _transactionValidator;
+    private readonly IValidator<OfxTransactionDto> _transactionValidator;
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly ITransactionInserter _transactionInserter;
     private readonly ILeaseService _leaseService;
@@ -31,7 +30,7 @@ public class ImportOfxFileHandler : IImportOfxFileHandler
         IEntryCategoryRepository entryCategoryRepository,
         ILogger<ImportOfxFileHandler> logger,
         IOptions<ImportSettings> importSettings,
-        IValidator<TransactionDto> transactionValidator,
+        IValidator<OfxTransactionDto> transactionValidator,
         IDateTimeProvider dateTimeProvider,
         ITransactionInserter transactionInserter,
         ILeaseService leaseService)
@@ -48,13 +47,15 @@ public class ImportOfxFileHandler : IImportOfxFileHandler
     }
     
     /// <inheritdoc />
-    public async Task<ApiResponse<ImportOfxFileResult>> HandleAsync(ImportOfxFileCommand command, CancellationToken cancellationToken = default)
+    public async Task<ApiResponse<ImportOfxFileResult>> HandleAsync(ImportOfxFileCommand command, CancellationToken ct)
     {
+        return await Task.FromResult(new ApiResponse<ImportOfxFileResult>(true));
+        /*
         _logger.LogInformation("Импорт OFX-файла: {FileName}", command.FileName);
 
         var leaseId = await _leaseService.AcquireLeaseAsync(command.FileName, TimeSpan.FromMinutes(1));
         
-        var importedFile = await CreateFile(command.FileName, cancellationToken, leaseId);
+        var importedFile = await CreateFile(command.FileName, ct, leaseId);
 
         // Пакет DTO для пакетной вставки
         var batch = new List<TransactionInsertDto>(_importSettings.BatchSize);
@@ -65,19 +66,19 @@ public class ImportOfxFileHandler : IImportOfxFileHandler
         var errorCount = 0;
 
         // Потоковая обработка транзакций
-        var ofxFileAsync = await _parser.ParseOfxFileAsync(command.FileStream, cancellationToken);
-        var transactions = ofxFileAsync.Transactions;
+        var result = await _parser.ParseOfxFileAsync(command.FileStream, ct);
+        var transactions =  await result.Statements.SelectMany(s => s.Transactions;
 
-        await foreach (var t in transactions.WithCancellation(cancellationToken))
+        await foreach (var t in transactions.WithCancellation(ct))
         {
             totalCount++;
 
             // Валидация транзакции через FluentValidation
-            var validationResult = await _transactionValidator.ValidateAsync(t, cancellationToken);
+            var validationResult = await _transactionValidator.ValidateAsync(t, ct);
             if (!validationResult.IsValid)
             {
                 var errorList = string.Join(", ", validationResult.Errors.Select(e => e.ErrorMessage));
-                _logger.LogWarning("Транзакция [{TranId}] пропущена: {Errors}", t.TranId, errorList);
+                _logger.LogWarning("Транзакция [{Id}] пропущена: {Errors}", t.Id, errorList);
                 errorCount++;
                 continue;
             }
@@ -86,7 +87,7 @@ public class ImportOfxFileHandler : IImportOfxFileHandler
             var categoryId = await _entryCategoryRepository.GetOrCreateCategoryIdAsync(t.Category);
             var dto = new TransactionInsertDto(
                 FileId: importedFile.Id,
-                FitId: t.TranId,
+                Id: t.Id,
                 Date: DateTime.SpecifyKind(t.TranDate, DateTimeKind.Utc),
                 Amount: t.Amount,
                 Description: t.Description,
@@ -100,7 +101,7 @@ public class ImportOfxFileHandler : IImportOfxFileHandler
                 continue;
             }
             await _leaseService.ValidateAndExtendLeaseAsync(command.FileName, leaseId, TimeSpan.FromMinutes(1));
-            var bulkResult = await _transactionInserter.BulkInsertCopyAsync(batch, cancellationToken);
+            var bulkResult = await _transactionInserter.BulkInsertCopyAsync(batch, ct);
             importedCount += bulkResult.Inserted;
             duplicatesCount += bulkResult.Duplicates;
             batch.Clear();
@@ -109,25 +110,26 @@ public class ImportOfxFileHandler : IImportOfxFileHandler
         if (batch.Count > 0)
         {
             await _leaseService.ValidateAndExtendLeaseAsync(command.FileName, leaseId, TimeSpan.FromMinutes(1));
-            var bulkResult = await _transactionInserter.BulkInsertCopyAsync(batch, cancellationToken);
+            var bulkResult = await _transactionInserter.BulkInsertCopyAsync(batch, ct);
             importedCount += bulkResult.Inserted;
             duplicatesCount += bulkResult.Duplicates;
         }
 
         importedFile.Status = BankFileStatus.Completed;
-        await _fileRepository.UpdateAsync(importedFile, cancellationToken);
+        await _fileRepository.UpdateAsync(importedFile, ct);
         await _leaseService.ReleaseLeaseAsync(command.FileName, leaseId);
         
         _logger.LogInformation("Импорт OFX-файла {FileName} завершён. Всего транзакций: {TotalCount}, успешно импортировано: {ImportedCount}", command.FileName, totalCount, importedCount);
 
         return new ApiResponse<ImportOfxFileResult>(true, new ImportOfxFileResult { TotalCount = totalCount, ImportedCount = importedCount, ErrorCount = errorCount, SkippedDuplicateCount = duplicatesCount });
+    */
     }
 
     /// <summary>
     /// Создаёт запись об импортируемом файле
     /// </summary>
     private async Task<BankFile> CreateFile(string fileName,
-        CancellationToken cancellationToken, Guid leaseId)
+        CancellationToken ct, Guid leaseId)
     {
         var importedFile = await _fileRepository.GetByFileNameAsync(fileName);
 
@@ -142,7 +144,7 @@ public class ImportOfxFileHandler : IImportOfxFileHandler
             }
 
             _logger.LogWarning("Удаление ранее импортированного файла с именем '{FileName}' и статусом {Status}", importedFile.FileName, importedFile.Status);
-            await _fileRepository.DeleteAsync(importedFile.Id, cancellationToken);
+            await _fileRepository.DeleteAsync(importedFile.Id, ct);
         }
         
         importedFile = new BankFile
@@ -152,6 +154,6 @@ public class ImportOfxFileHandler : IImportOfxFileHandler
             Status = BankFileStatus.InProgress
         };
         
-        return await _fileRepository.CreateAsync(importedFile, cancellationToken);
+        return await _fileRepository.CreateAsync(importedFile, ct);
     }
 }
