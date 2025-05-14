@@ -1,4 +1,3 @@
-using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 
@@ -11,7 +10,7 @@ namespace HomeFinancial.OfxParser;
 [DebuggerDisplay("{TagName} (Depth={TagDepth})")]
 public readonly record struct OfxTag(string TagName, int TagDepth)
 {
-    #region Корневые и промежуточные элементы для доступа к выпискам
+    // Корневые и промежуточные элементы для доступа к выпискам
 
     public static readonly OfxTag Ofx          = new("OFX",           0);
     public static readonly OfxTag BankMsgsRsv1 = new("BANKMSGSRSV1",  1);
@@ -38,44 +37,5 @@ public readonly record struct OfxTag(string TagName, int TagDepth)
     public static readonly OfxTag Name         = new("NAME",          6);
     public static readonly OfxTag Memo         = new("MEMO",          6);
 
-    #endregion
-
-    #region Lookup dictionary
-
-    private static readonly ImmutableDictionary<string, OfxTag> Lookup =
-        ImmutableDictionary.CreateRange(new Dictionary<string, OfxTag>
-        {
-            [Ofx.TagName]          = Ofx,
-            [BankMsgsRsv1.TagName] = BankMsgsRsv1,
-            [StmtTrnRs.TagName]    = StmtTrnRs,
-            [StmTrs.TagName]       = StmTrs,
-            [BankAcctFrom.TagName] = BankAcctFrom,
-            [BankId.TagName]       = BankId,
-            [AcctId.TagName]       = AcctId,
-            [AcctType.TagName]     = AcctType,
-            [BankTranList.TagName] = BankTranList,
-            [DtStart.TagName]      = DtStart,
-            [DtEnd.TagName]        = DtEnd,
-            [StmtTrn.TagName]      = StmtTrn,
-            [TrnType.TagName]      = TrnType,
-            [DtPosted.TagName]     = DtPosted,
-            [TrnAmt.TagName]       = TrnAmt,
-            [FitId.TagName]        = FitId,
-            [Name.TagName]         = Name,
-            [Memo.TagName]         = Memo
-        });
-
-    #endregion
-
-    /// <summary>
-    /// Попытаться получить OfxTag по его строковому представлению.
-    /// </summary>
-    /// <param name="tagName">Строковое имя тега.</param>
-    /// <param name="tag">Найденный OfxTag или default.</param>
-    /// <returns>True, если тег найден, иначе False.</returns>
-    public static bool TryGet(string tagName, out OfxTag tag) =>
-        Lookup.TryGetValue(tagName, out tag);
-    
-    /// <inheritdoc/>
     public override string ToString() => TagName;
 }

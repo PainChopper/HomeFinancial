@@ -1,4 +1,4 @@
-namespace HomeFinancial.OfxParser;
+namespace HomeFinancial.OfxParser.Dto;
 
 /// <summary>
 /// Представляет информацию о банковской транзакции в формате OFX

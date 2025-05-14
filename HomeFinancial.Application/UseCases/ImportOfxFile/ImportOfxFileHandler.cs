@@ -1,9 +1,11 @@
 using FluentValidation;
 using HomeFinancial.Application.Common;
+using HomeFinancial.Application.Dtos;
 using HomeFinancial.Application.Interfaces;
 using HomeFinancial.Domain.Entities;
 using HomeFinancial.Domain.Repositories;
 using HomeFinancial.OfxParser;
+using HomeFinancial.OfxParser.Dto;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
@@ -49,8 +51,7 @@ public class ImportOfxFileHandler : IImportOfxFileHandler
     /// <inheritdoc />
     public async Task<ApiResponse<ImportOfxFileResult>> HandleAsync(ImportOfxFileCommand command, CancellationToken ct)
     {
-        return await Task.FromResult(new ApiResponse<ImportOfxFileResult>(true));
-        /*
+
         _logger.LogInformation("Импорт OFX-файла: {FileName}", command.FileName);
 
         var leaseId = await _leaseService.AcquireLeaseAsync(command.FileName, TimeSpan.FromMinutes(1));
@@ -64,65 +65,70 @@ public class ImportOfxFileHandler : IImportOfxFileHandler
         var importedCount = 0;
         var duplicatesCount = 0;
         var errorCount = 0;
-
-        // Потоковая обработка транзакций
-        var result = await _parser.ParseOfxFileAsync(command.FileStream, ct);
-        var transactions =  await result.Statements.SelectMany(s => s.Transactions;
-
-        await foreach (var t in transactions.WithCancellation(ct))
-        {
-            totalCount++;
-
-            // Валидация транзакции через FluentValidation
-            var validationResult = await _transactionValidator.ValidateAsync(t, ct);
-            if (!validationResult.IsValid)
-            {
-                var errorList = string.Join(", ", validationResult.Errors.Select(e => e.ErrorMessage));
-                _logger.LogWarning("Транзакция [{Id}] пропущена: {Errors}", t.Id, errorList);
-                errorCount++;
-                continue;
-            }
-
-            // Определяем или создаём категорию и формируем DTO
-            var categoryId = await _entryCategoryRepository.GetOrCreateCategoryIdAsync(t.Category);
-            var dto = new TransactionInsertDto(
-                FileId: importedFile.Id,
-                Id: t.Id,
-                Date: DateTime.SpecifyKind(t.TranDate, DateTimeKind.Utc),
-                Amount: t.Amount,
-                Description: t.Description,
-                CategoryId: categoryId
-            );
-
-            batch.Add(dto);
-
-            if (batch.Count < _importSettings.BatchSize)
-            {
-                continue;
-            }
-            await _leaseService.ValidateAndExtendLeaseAsync(command.FileName, leaseId, TimeSpan.FromMinutes(1));
-            var bulkResult = await _transactionInserter.BulkInsertCopyAsync(batch, ct);
-            importedCount += bulkResult.Inserted;
-            duplicatesCount += bulkResult.Duplicates;
-            batch.Clear();
-        }
-
-        if (batch.Count > 0)
-        {
-            await _leaseService.ValidateAndExtendLeaseAsync(command.FileName, leaseId, TimeSpan.FromMinutes(1));
-            var bulkResult = await _transactionInserter.BulkInsertCopyAsync(batch, ct);
-            importedCount += bulkResult.Inserted;
-            duplicatesCount += bulkResult.Duplicates;
-        }
-
-        importedFile.Status = BankFileStatus.Completed;
-        await _fileRepository.UpdateAsync(importedFile, ct);
-        await _leaseService.ReleaseLeaseAsync(command.FileName, leaseId);
         
-        _logger.LogInformation("Импорт OFX-файла {FileName} завершён. Всего транзакций: {TotalCount}, успешно импортировано: {ImportedCount}", command.FileName, totalCount, importedCount);
+        var statements = _parser.ParseStatementsAsync(command.FileStream, ct);
+/*
 
-        return new ApiResponse<ImportOfxFileResult>(true, new ImportOfxFileResult { TotalCount = totalCount, ImportedCount = importedCount, ErrorCount = errorCount, SkippedDuplicateCount = duplicatesCount });
-    */
+      // Потоковая обработка транзакций
+     
+      var transactions =  await result.Statements.SelectMany(s => s.Transactions;
+
+      await foreach (var t in transactions.WithCancellation(ct))
+      {
+          totalCount++;
+
+          // Валидация транзакции через FluentValidation
+          var validationResult = await _transactionValidator.ValidateAsync(t, ct);
+          if (!validationResult.IsValid)
+          {
+              var errorList = string.Join(", ", validationResult.Errors.Select(e => e.ErrorMessage));
+              _logger.LogWarning("Транзакция [{Id}] пропущена: {Errors}", t.Id, errorList);
+              errorCount++;
+              continue;
+          }
+
+          // Определяем или создаём категорию и формируем DTO
+          var categoryId = await _entryCategoryRepository.GetOrCreateCategoryIdAsync(t.Category);
+          var dto = new TransactionInsertDto(
+              FileId: importedFile.Id,
+              Id: t.Id,
+              Date: DateTime.SpecifyKind(t.TranDate, DateTimeKind.Utc),
+              Amount: t.Amount,
+              Description: t.Description,
+              CategoryId: categoryId
+          );
+
+          batch.Add(dto);
+
+          if (batch.Count < _importSettings.BatchSize)
+          {
+              continue;
+          }
+          await _leaseService.ValidateAndExtendLeaseAsync(command.FileName, leaseId, TimeSpan.FromMinutes(1));
+          var bulkResult = await _transactionInserter.BulkInsertCopyAsync(batch, ct);
+          importedCount += bulkResult.Inserted;
+          duplicatesCount += bulkResult.Duplicates;
+          batch.Clear();
+      }
+
+      if (batch.Count > 0)
+      {
+          await _leaseService.ValidateAndExtendLeaseAsync(command.FileName, leaseId, TimeSpan.FromMinutes(1));
+          var bulkResult = await _transactionInserter.BulkInsertCopyAsync(batch, ct);
+          importedCount += bulkResult.Inserted;
+          duplicatesCount += bulkResult.Duplicates;
+      }
+
+      importedFile.Status = BankFileStatus.Completed;
+      await _fileRepository.UpdateAsync(importedFile, ct);
+      await _leaseService.ReleaseLeaseAsync(command.FileName, leaseId);
+
+      _logger.LogInformation("Импорт OFX-файла {FileName} завершён. Всего транзакций: {TotalCount}, успешно импортировано: {ImportedCount}", command.FileName, totalCount, importedCount);
+
+      return new ApiResponse<ImportOfxFileResult>(true, new ImportOfxFileResult { TotalCount = totalCount, ImportedCount = importedCount, ErrorCount = errorCount, SkippedDuplicateCount = duplicatesCount });
+  */
+
+        return await Task.FromResult(new ApiResponse<ImportOfxFileResult>(true));
     }
 
     /// <summary>

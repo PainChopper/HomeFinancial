@@ -1,3 +1,5 @@
+using HomeFinancial.OfxParser.Dto;
+
 namespace HomeFinancial.OfxParser;
 
 /// <summary>

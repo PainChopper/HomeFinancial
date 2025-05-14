@@ -1,4 +1,4 @@
-namespace HomeFinancial.OfxParser;
+namespace HomeFinancial.OfxParser.Dto;
 
 /// <summary>
 /// Представляет выписку по банковскому счету в формате OFX

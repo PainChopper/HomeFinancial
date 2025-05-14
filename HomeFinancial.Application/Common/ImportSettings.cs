@@ -8,5 +8,6 @@ public class ImportSettings
     /// <summary>
     /// Размер пакета для обработки транзакций
     /// </summary>
-    public int BatchSize { get; } = 100;
+    // ReSharper disable once AutoPropertyCanBeMadeGetOnly.Global
+    public int BatchSize { get; init; } = 100;
 }
