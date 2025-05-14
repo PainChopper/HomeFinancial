@@ -1,5 +1,3 @@
-using System.Runtime.CompilerServices;
-
 namespace HomeFinancial.OfxParser;
 
 /// <summary>
@@ -13,5 +11,5 @@ public interface IOfxParser
     /// <param name="stream">Поток с XML данными</param>
     /// <param name="ct">Токен отмены операции</param>
     /// <returns>Асинхронный перечислитель банковских выписок</returns>
-    IAsyncEnumerable<OfxAccountStatementDto> ParseStatementsAsync(Stream stream, [EnumeratorCancellation] CancellationToken ct = default);
+    IAsyncEnumerable<OfxAccountStatementDto> ParseStatementsAsync(Stream stream, CancellationToken ct = default);
 }
