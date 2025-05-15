@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using HomeFinancial.Domain.Common;
 
 namespace HomeFinancial.Domain.Entities;
@@ -5,6 +6,7 @@ namespace HomeFinancial.Domain.Entities;
 /// <summary>
 /// Банк, участвующий в операциях
 /// </summary>
+[SuppressMessage("ReSharper", "PropertyCanBeMadeInitOnly.Global")]
 public class Bank  : Entity
 {
     /// <summary>

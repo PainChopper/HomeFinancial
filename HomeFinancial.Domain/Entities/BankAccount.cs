@@ -1,4 +1,5 @@
 using HomeFinancial.Domain.Common;
+using JetBrains.Annotations;
 
 namespace HomeFinancial.Domain.Entities;
 
@@ -8,22 +9,22 @@ namespace HomeFinancial.Domain.Entities;
 public class BankAccount : Entity
 {
     /// <summary>
-    /// Идентификатор банка (внешний ключ)
-    /// </summary>
-    public int BankId { get; set; }
-
-    /// <summary>
-    /// Банк, к которому относится счет
-    /// </summary>
-    public Bank Bank { get; set; } = null!;
-
-    /// <summary>
     /// Номер счета (ACCTID)
     /// </summary>
-    public string AccountId { get; set; } = null!;
+    public required string AccountId { get; init; }
 
     /// <summary>
     /// Тип счета (ACCTTYPE)
     /// </summary>
-    public string AccountType { get; set; } = null!;
+    public required string AccountType { get; init; }
+    
+    /// <summary>
+    /// Идентификатор банка (внешний ключ)
+    /// </summary>
+    public required int BankId { get; init; }
+
+    /// <summary>
+    /// Банк, к которому относится счет
+    /// </summary>
+    public Bank? Bank { get; [UsedImplicitly] set; }
 }

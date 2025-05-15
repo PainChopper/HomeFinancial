@@ -42,17 +42,18 @@ public sealed class EntryCategoryRepository : GenericRepository<EntryCategory>, 
         // Вставка или получение из БД
         var id = await _retryPolicyHelper.RetryAsync(async () =>
         {
-            const string sql = @"
-WITH ins AS (
-    INSERT INTO transaction_categories (name)
-    VALUES (@CategoryName)
-    ON CONFLICT (name) DO NOTHING
-    RETURNING id
-)
-SELECT id FROM ins
-UNION ALL
-SELECT id FROM transaction_categories WHERE name = @CategoryName
-LIMIT 1;";
+            const string sql = """
+                               WITH ins AS (
+                                   INSERT INTO transaction_categories (name)
+                                   VALUES (@CategoryName)
+                                   ON CONFLICT (name) DO NOTHING
+                                   RETURNING id
+                               )
+                               SELECT id FROM ins
+                               UNION ALL
+                               SELECT id FROM transaction_categories WHERE name = @CategoryName
+                               LIMIT 1;
+                               """;
 
             var conn = DbContext.Database.GetDbConnection();
             if (conn.State != ConnectionState.Open)

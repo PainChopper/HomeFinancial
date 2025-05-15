@@ -1,4 +1,5 @@
 using HomeFinancial.Domain.Common;
+using JetBrains.Annotations;
 
 namespace HomeFinancial.Domain.Entities;
 
@@ -20,5 +21,5 @@ public class BankFile : Entity
     /// <summary>
     /// Статус файла
     /// </summary>
-    public required BankFileStatus Status { get; set; }
+    public required BankFileStatus Status { get; [UsedImplicitly] set; }
 }

@@ -67,7 +67,13 @@ public class ImportOfxFileHandler : IImportOfxFileHandler
         var errorCount = 0;
         
         var statements = _parser.ParseStatementsAsync(command.FileStream, ct);
-/*
+
+        await foreach (var statementDto in statements)
+        {
+            
+        }
+        
+        /*
 
       // Потоковая обработка транзакций
      
