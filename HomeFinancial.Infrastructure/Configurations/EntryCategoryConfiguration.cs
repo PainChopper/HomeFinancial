@@ -4,9 +4,9 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace HomeFinancial.Infrastructure.Configurations;
 
-public class CategoryConfiguration : IEntityTypeConfiguration<TransactionCategory>
+public class EntryCategoryConfiguration : IEntityTypeConfiguration<EntryCategory>
 {
-    public void Configure(EntityTypeBuilder<TransactionCategory> builder)
+    public void Configure(EntityTypeBuilder<EntryCategory> builder)
     {
         builder.HasKey(c => c.Id);
         builder.Property(c => c.Name)

@@ -30,7 +30,7 @@ public sealed class RedisCacheService : ICacheService
         var stringValue = value.ToString();
         var targetType = typeof(T);
         var underlyingType = Nullable.GetUnderlyingType(targetType);
-        object? converted = underlyingType != null
+        var converted = underlyingType != null
             ? Convert.ChangeType(stringValue, underlyingType)
             : Convert.ChangeType(stringValue, targetType);
         return (T?)converted;
@@ -66,7 +66,7 @@ public sealed class RedisCacheService : ICacheService
         var stringValue = value.ToString();
         var tType = typeof(T);
         var underlying = Nullable.GetUnderlyingType(tType);
-        object? conv = underlying != null
+        var conv = underlying != null
             ? Convert.ChangeType(stringValue, underlying)
             : Convert.ChangeType(stringValue, tType);
         return (T?)conv;

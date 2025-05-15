@@ -1,9 +1,30 @@
 using HomeFinancial.Infrastructure.Persistence;
+using Microsoft.EntityFrameworkCore;
 
-namespace HomeFinancial.WebApi;
+namespace HomeFinancial.WebApi.Extensions;
 
 public static class DatabaseExtensions
 {
+    public static void ApplyDatabaseMigrations(this WebApplication app)
+    {
+        using var scope = app.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+        try
+        {
+            logger.LogInformation("Применение миграций базы данных...");
+            db.Database.Migrate();
+            
+            logger.LogInformation("Удаляем все файлы...");
+            db.BankFiles.ExecuteDelete();
+        }
+        catch (Exception ex)
+        {
+            logger.LogCritical(ex, "Ошибка при применении миграций базы данных.");
+            throw;
+        }
+    }
+
     /// <summary>
     /// Проверяет соединение с базой данных через ApplicationDbContext.
     /// </summary>

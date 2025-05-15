@@ -1,0 +1,8 @@
+<Project>
+  <PropertyGroup>
+    <!-- Включаем .NET-анализаторы для всех проектов -->
+    <EnableNETAnalyzers>true</EnableNETAnalyzers>
+    <!-- Уровень анализа: latest -->
+    <AnalysisLevel>latest</AnalysisLevel>
+  </PropertyGroup>
+</Project>

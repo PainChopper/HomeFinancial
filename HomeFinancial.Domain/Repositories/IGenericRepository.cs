@@ -11,37 +11,37 @@ public interface IGenericRepository<T> where T : IEntity
     /// <summary>
     /// Получает все сущности
     /// </summary>
-    /// <param name="cancellationToken"></param>
+    /// <param name="ct"></param>
     /// <returns>Список сущностей</returns>
-    Task<List<T>> GetAllAsync(CancellationToken cancellationToken  = default);
+    Task<List<T>> GetAllAsync(CancellationToken ct  = default);
 
     /// <summary>
     /// Получает сущность по идентификатору
     /// </summary>
     /// <param name="id">Идентификатор сущности</param>
-    /// <param name="cancellationToken"></param>
+    /// <param name="ct"></param>
     /// <returns>Сущность или null, если сущность не найдена</returns>
-    Task<T?> GetByIdAsync(int id, CancellationToken cancellationToken  = default);
+    Task<T?> GetByIdAsync(int id, CancellationToken ct  = default);
 
     /// <summary>
     /// Создает новую сущность
     /// </summary>
     /// <param name="entity">Сущность для создания</param>
-    /// <param name="cancellationToken"></param>
+    /// <param name="ct"></param>
     /// <returns>Созданная сущность</returns>
-    Task<T> CreateAsync(T entity, CancellationToken cancellationToken  = default);
+    Task<T> CreateAsync(T entity, CancellationToken ct  = default);
 
     /// <summary>
     /// Обновляет существующую сущность
     /// </summary>
     /// <param name="entity">Сущность для обновления</param>
-    /// <param name="cancellationToken"></param>
-    Task UpdateAsync(T entity, CancellationToken cancellationToken  = default);
+    /// <param name="ct"></param>
+    Task UpdateAsync(T entity, CancellationToken ct  = default);
 
     /// <summary>
     /// Удаляет сущность по идентификатору
     /// </summary>
     /// <param name="id">Идентификатор сущности</param>
-    /// <param name="cancellationToken"></param>
-    Task DeleteAsync(int id, CancellationToken cancellationToken  = default);
+    /// <param name="ct"></param>
+    Task DeleteAsync(int id, CancellationToken ct  = default);
 }

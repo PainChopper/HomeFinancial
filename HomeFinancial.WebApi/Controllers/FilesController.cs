@@ -1,7 +1,7 @@
-using HomeFinancial.Application.UseCases.ImportOfxFile;
-using HomeFinancial.Application.Common;
-using Microsoft.AspNetCore.Mvc;
 using FluentValidation;
+using HomeFinancial.Application.Common;
+using HomeFinancial.Application.UseCases.ImportOfxFile;
+using Microsoft.AspNetCore.Mvc;
 
 namespace HomeFinancial.WebApi.Controllers;
 
@@ -23,7 +23,7 @@ public class FilesController : ControllerBase
     /// Импорт банковского файла (multipart/form-data)
     /// </summary>
     /// <param name="form">Форма импорта файла</param>
-    /// <param name="cancellationToken">Токен отмены операции</param>
+    /// <param name="ct">Токен отмены операции</param>
     /// <returns>Результат импорта</returns>
     /// <response code="200">Файл успешно импортирован</response>
     /// <response code="400">Ошибка валидации или бизнес-логики</response>
@@ -33,13 +33,13 @@ public class FilesController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<ImportOfxFileResult>), 500)]
     [HttpPost("import")]
     [Consumes("multipart/form-data")]
-    public async Task<ActionResult<ApiResponse<ImportOfxFileResult>>> ImportFile([FromForm] ImportFileForm form, CancellationToken cancellationToken)
+    public async Task<ActionResult<ApiResponse<ImportOfxFileResult>>> ImportFile([FromForm] ImportFileForm form, CancellationToken ct)
     {
         await using var stream = form.File.OpenReadStream();
         var command = new ImportOfxFileCommand(form.FileName, stream);
         try
         {
-            var response = await _importHandler.HandleAsync(command, cancellationToken);
+            var response = await _importHandler.HandleAsync(command, ct);
             if (response.Success)
                 return Ok(response);
             return BadRequest(response);

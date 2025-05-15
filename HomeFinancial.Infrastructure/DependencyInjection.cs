@@ -1,15 +1,15 @@
 using HomeFinancial.Application.Common;
 using HomeFinancial.Application.Interfaces;
 using HomeFinancial.Domain.Repositories;
-using HomeFinancial.Infrastructure.Persistence;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Configuration;
-using HomeFinancial.Infrastructure.Utils;
-using StackExchange.Redis;
 using HomeFinancial.Infrastructure.HostedServices;
+using HomeFinancial.Infrastructure.Persistence;
 using HomeFinancial.Infrastructure.Repositories;
 using HomeFinancial.Infrastructure.Services;
+using HomeFinancial.Infrastructure.Utils;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using StackExchange.Redis;
 
 namespace HomeFinancial.Infrastructure;
 
@@ -41,14 +41,15 @@ public static class DependencyInjection
         services.AddSingleton<RetryPolicyHelper>();
                 
         // Регистрация репозиториев
-        services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
-        services.AddScoped<ICategoryRepository, CategoryRepository>();
+        services.AddScoped<IEntryCategoryRepository, EntryCategoryRepository>();
         services.AddScoped<IFileRepository, FileRepository>();
         services.AddScoped<ITransactionInserter, TransactionInserter>();
+        services.AddScoped<IBankRepository, BankRepository>();
+        services.AddScoped<IBankAccountRepository, BankAccountRepository>();
 
        
         // Hosted service для прогрева кэша категорий
-        services.AddHostedService<CategoryCacheWarmupService>();
+        services.AddHostedService<EntryCategoryCacheWarmupService>();
 
         return services;
     }

@@ -11,7 +11,7 @@ public interface IImportOfxFileHandler
     /// Обработчик импорта OFX-файла
     /// </summary>
     /// <param name="command">Команда на импорт OFX-файла</param>
-    /// <param name="cancellationToken">Токен отмены</param>
+    /// <param name="ct">Токен отмены</param>
     /// <returns>Результат импорта OFX-файла</returns>
-    Task<ApiResponse<ImportOfxFileResult>> HandleAsync(ImportOfxFileCommand command, CancellationToken cancellationToken = default);
+    Task<ApiResponse<ImportOfxFileResult>> HandleAsync(ImportOfxFileCommand command, CancellationToken ct = default);
 }

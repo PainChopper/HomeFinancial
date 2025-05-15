@@ -3,6 +3,7 @@ using HomeFinancial.Application.Interfaces;
 using HomeFinancial.Infrastructure.Persistence;
 using Microsoft.Extensions.Logging;
 using Npgsql;
+using NpgsqlTypes;
 
 namespace HomeFinancial.Infrastructure.Repositories;
 
@@ -20,17 +21,17 @@ public class TransactionInserter : ITransactionInserter
     /// <inheritdoc/>
     public async Task<(int Inserted, int Duplicates)> BulkInsertCopyAsync(
         IList<TransactionInsertDto> transactions,
-        CancellationToken cancellationToken)
+        CancellationToken ct)
     {
         ArgumentNullException.ThrowIfNull(transactions);
 
         var existingFitIds = await GetExistingFitIdsAsync(
             transactions.Select(t => t.FitId).ToArray(), 
-            cancellationToken);
+            ct);
 
         foreach (var fitId in existingFitIds)
         {
-            _logger.LogWarning("Транзакция с FitId={FitId} уже существует", fitId);
+            _logger.LogWarning("Транзакция с Id={Id} уже существует", fitId);
         }
 
         // Оставляем только новые DTO
@@ -45,29 +46,30 @@ public class TransactionInserter : ITransactionInserter
         }
 
         await using var conn = new NpgsqlConnection(_connectionStrings.Postgres);
-        await conn.OpenAsync(cancellationToken);
+        await conn.OpenAsync(ct);
 
         const string sql = """
                            COPY file_transactions
-                           (file_id, fit_id, date, amount, description, category_id)
+                           (file_id, fit_id, date, amount, description, category_id, bank_account_id)
                            FROM STDIN (FORMAT BINARY)
                            """;
         try
         {
-            await using var writer = await conn.BeginBinaryImportAsync(sql, cancellationToken);
+            await using var writer = await conn.BeginBinaryImportAsync(sql, ct);
 
             foreach (var t in newItems)
             {
-                await writer.StartRowAsync(cancellationToken);
-                await writer.WriteAsync(t.FileId, NpgsqlTypes.NpgsqlDbType.Integer, cancellationToken);
-                await writer.WriteAsync(t.FitId,       NpgsqlTypes.NpgsqlDbType.Text, cancellationToken);
-                await writer.WriteAsync(t.Date.ToUniversalTime(), NpgsqlTypes.NpgsqlDbType.TimestampTz, cancellationToken);
-                await writer.WriteAsync(t.Amount,      NpgsqlTypes.NpgsqlDbType.Numeric, cancellationToken);
-                await writer.WriteAsync(t.Description, NpgsqlTypes.NpgsqlDbType.Text, cancellationToken);
-                await writer.WriteAsync(t.CategoryId,  NpgsqlTypes.NpgsqlDbType.Integer, cancellationToken);
+                await writer.StartRowAsync(ct);
+                await writer.WriteAsync(t.FileId, NpgsqlDbType.Integer, ct);
+                await writer.WriteAsync(t.FitId,       NpgsqlDbType.Text, ct);
+                await writer.WriteAsync(t.Date.ToUniversalTime(), NpgsqlDbType.TimestampTz, ct);
+                await writer.WriteAsync(t.Amount,      NpgsqlDbType.Numeric, ct);
+                await writer.WriteAsync(t.Description, NpgsqlDbType.Text, ct);
+                await writer.WriteAsync(t.CategoryId,  NpgsqlDbType.Integer, ct);
+                await writer.WriteAsync(t.BankAccountId,   NpgsqlDbType.Integer, ct);
             }
 
-            await writer.CompleteAsync(cancellationToken);
+            await writer.CompleteAsync(ct);
 
             _logger.LogInformation("Бинарный COPY завершён. Вставлено {Count} транзакций.", newItems.Count);
 
@@ -84,9 +86,9 @@ public class TransactionInserter : ITransactionInserter
     /// Получает список существующих FIT-ID из базы, сравнивая с переданным списком DTO
     /// </summary>
     /// <param name="fitIds"></param>
-    /// <param name="cancellationToken">Токен отмены операции</param>
+    /// <param name="ct">Токен отмены операции</param>
     /// <returns>Сет существующих FIT-ID</returns>
-    private async Task<HashSet<string>> GetExistingFitIdsAsync(string[] fitIds, CancellationToken cancellationToken)
+    private async Task<HashSet<string>> GetExistingFitIdsAsync(string[] fitIds, CancellationToken ct)
     {
         var result = new HashSet<string>();
 
@@ -100,13 +102,14 @@ public class TransactionInserter : ITransactionInserter
                            """;
 
         await using var conn = new NpgsqlConnection(_connectionStrings.Postgres);
-        await conn.OpenAsync(cancellationToken);
+        await conn.OpenAsync(ct);
 
         await using var cmd = new NpgsqlCommand(sql, conn);
-        cmd.Parameters.AddWithValue("fit_ids", NpgsqlTypes.NpgsqlDbType.Array | NpgsqlTypes.NpgsqlDbType.Text, fitIds);
+        // ReSharper disable once BitwiseOperatorOnEnumWithoutFlags
+        cmd.Parameters.AddWithValue("fit_ids", NpgsqlDbType.Array | NpgsqlDbType.Text, fitIds);
 
-        await using var reader = await cmd.ExecuteReaderAsync(cancellationToken);
-        while (await reader.ReadAsync(cancellationToken))
+        await using var reader = await cmd.ExecuteReaderAsync(ct);
+        while (await reader.ReadAsync(ct))
         {
             result.Add(reader.GetString(0));
         }

@@ -10,14 +10,14 @@ using Microsoft.Extensions.Logging;
 namespace HomeFinancial.Infrastructure.Repositories;
 
 // Репозиторий для работы с категориями, кэшируем их в одном Redis-хэше
-public sealed class CategoryRepository : GenericRepository<TransactionCategory>, ICategoryRepository
+public sealed class EntryCategoryRepository : GenericRepository<EntryCategory>, IEntryCategoryRepository
 {
     private const string CategoriesHashKey = "Categories";
     private readonly RetryPolicyHelper _retryPolicyHelper;
     private readonly ICacheService      _cacheService;
 
-    public CategoryRepository(ApplicationDbContext dbContext,
-                              ILogger<CategoryRepository> logger,
+    public EntryCategoryRepository(ApplicationDbContext dbContext,
+                              ILogger<EntryCategoryRepository> logger,
                               RetryPolicyHelper retryPolicyHelper,
                               ICacheService cacheService)
         : base(dbContext)
@@ -42,17 +42,18 @@ public sealed class CategoryRepository : GenericRepository<TransactionCategory>,
         // Вставка или получение из БД
         var id = await _retryPolicyHelper.RetryAsync(async () =>
         {
-            const string sql = @"
-WITH ins AS (
-    INSERT INTO transaction_categories (name)
-    VALUES (@CategoryName)
-    ON CONFLICT (name) DO NOTHING
-    RETURNING id
-)
-SELECT id FROM ins
-UNION ALL
-SELECT id FROM transaction_categories WHERE name = @CategoryName
-LIMIT 1;";
+            const string sql = """
+                               WITH ins AS (
+                                   INSERT INTO transaction_categories (name)
+                                   VALUES (@CategoryName)
+                                   ON CONFLICT (name) DO NOTHING
+                                   RETURNING id
+                               )
+                               SELECT id FROM ins
+                               UNION ALL
+                               SELECT id FROM transaction_categories WHERE name = @CategoryName
+                               LIMIT 1;
+                               """;
 
             var conn = DbContext.Database.GetDbConnection();
             if (conn.State != ConnectionState.Open)

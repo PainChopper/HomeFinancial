@@ -1,1 +1,132 @@
-Не использовать MediatR.
+Отвечать на русском.
+
+Использовать var.
+Использовать Raw String Literals.
+Не использовать MediatR, ConfigureAwait(false), ReadSubtree(), AsNoTracking().
+
+Называть cancellationToken ct.
+
+Стараться использовать паттерны, если уместно.
+
+Ставь скобки после операторов, даже если там один вложенный оператор.
+
+Комментарии нужны ко всем методам. Если описано уже в интерфейсе то /// <inheritdoc />
+Комментарии по остальному коду не нужны, если только не делается что-то особенное.
+
+XML файл читаем в потоке, лениво и асинхронно. Не копируем ничего в контейнеры. Файлы могут быть очень большими.
+
+Структура XML файла, который мы читаем такая:
+<?xml version='1.0' encoding='utf-8'?>
+<OFX>
+	<SIGNONMSGSRSV1>
+		<SONRS>
+			<STATUS>
+				<CODE>0</CODE>
+				<SEVERITY>INFO</SEVERITY>
+			</STATUS>
+			<DTSERVER>20250331183147.017[+3:MSK]</DTSERVER>
+			<LANGUAGE>RUS</LANGUAGE>
+		</SONRS>
+	</SIGNONMSGSRSV1>
+	<BANKMSGSRSV1>
+		<STMTTRNRS>
+			<TRNUID>0</TRNUID>
+			<STATUS>
+				<CODE>0</CODE>
+				<SEVERITY>INFO</SEVERITY>
+			</STATUS>
+			<STMTRS>
+				<CURDEF>RUB</CURDEF>
+				<BANKACCTFROM>
+					<BANKID>A-BANK</BANKID>
+					<ACCTID>30101810ZZZZ987654</ACCTID>
+					<ACCTTYPE>CHECKING</ACCTTYPE>
+				</BANKACCTFROM>
+				<BANKTRANLIST>
+					<DTSTART>20250301030000.000[+3:MSK]</DTSTART>
+					<DTEND>20250401025959.000[+3:MSK]</DTEND>
+					<STMTTRN>
+						<TRNTYPE>DEBIT</TRNTYPE>
+						<DTPOSTED>20250329180009.000[+3:MSK]</DTPOSTED>
+						<TRNAMT>-19.0000</TRNAMT>
+						<FITID>109456664968</FITID>
+						<NAME>Гражданин A.</NAME>
+						<MEMO>Оплата</MEMO>
+						<CURRENCY>
+							<CURSYM>RUB</CURSYM>
+							<CURRATE>1.0</CURRATE>
+						</CURRENCY>
+					</STMTTRN>
+					<STMTTRN>
+						<TRNTYPE>DEBIT</TRNTYPE>
+						<DTPOSTED>20250329175854.000[+3:MSK]</DTPOSTED>
+						<TRNAMT>-229.0000</TRNAMT>
+						<FITID>109456664623</FITID>
+						<NAME>Гражданин A.</NAME>
+						<MEMO>Оплата</MEMO>
+						<CURRENCY>
+							<CURSYM>RUB</CURSYM>
+							<CURRATE>1.0</CURRATE>
+						</CURRENCY>
+					</STMTTRN>
+					<STMTTRN>
+						<TRNTYPE>CREDIT</TRNTYPE>
+						<DTPOSTED>20250321001239.000[+3:MSK]</DTPOSTED>
+						<TRNAMT>67000.0000</TRNAMT>
+						<FITID>108522034753</FITID>
+						<NAME>Кафе "Лето"</NAME>
+						<MEMO>Возврат</MEMO>
+						<CURRENCY>
+							<CURSYM>RUB</CURSYM>
+							<CURRATE>1.0</CURRATE>
+						</CURRENCY>
+					</STMTTRN>
+				</BANKTRANLIST>
+			</STMTRS>
+		</STMTTRNRS>
+		<STMTTRNRS>
+			<TRNUID>0</TRNUID>
+			<STATUS>
+				<CODE>0</CODE>
+				<SEVERITY>INFO</SEVERITY>
+			</STATUS>
+			<STMTRS>
+				<CURDEF>RUB</CURDEF>
+				<BANKACCTFROM>
+					<BANKID>B-BANK</BANKID>
+					<ACCTID>40817810XXXX123456</ACCTID>
+					<ACCTTYPE>SAVINGS</ACCTTYPE>
+				</BANKACCTFROM>
+				<BANKTRANLIST>
+					<DTSTART>20250301030000.000[+3:MSK]</DTSTART>
+					<DTEND>20250401025959.000[+3:MSK]</DTEND>
+					<STMTTRN>
+						<TRNTYPE>CREDIT</TRNTYPE>
+						<DTPOSTED>20250328222759.000[+3:MSK]</DTPOSTED>
+						<TRNAMT>-110.2800</TRNAMT>
+						<FITID>109362350911</FITID>
+						<NAME>Гражданин A.</NAME>
+						<MEMO>Услуги</MEMO>
+						<CURRENCY>
+							<CURSYM>RUB</CURSYM>
+							<CURRATE>1.0</CURRATE>
+						</CURRENCY>
+					</STMTTRN>
+					<STMTTRN>
+						<TRNTYPE>DEBIT</TRNTYPE>
+						<DTPOSTED>20250316185418.000[+3:MSK]</DTPOSTED>
+						<TRNAMT>-39.8400</TRNAMT>
+						<FITID>108087401617</FITID>
+						<NAME>ИП Иванов</NAME>
+						<MEMO>Перевод</MEMO>
+						<CURRENCY>
+							<CURSYM>RUB</CURSYM>
+							<CURRATE>1.0</CURRATE>
+						</CURRENCY>
+					</STMTTRN>
+				</BANKTRANLIST>
+			</STMTRS>
+		</STMTTRNRS>
+	</BANKMSGSRSV1>
+</OFX>
+

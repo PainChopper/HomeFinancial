@@ -1,12 +1,12 @@
-using JetBrains.Annotations;
 using HomeFinancial.Domain.Common;
+using JetBrains.Annotations;
 
 namespace HomeFinancial.Domain.Entities;
 
 /// <summary>
 /// Банковская транзакция
 /// </summary>
-public class FileTransaction : Entity
+public class StatementEntry : Entity
 {
     /// <summary>
     /// Уникальный идентификатор транзакции в банковской системе (Financial Institution Transaction ID)
@@ -30,21 +30,32 @@ public class FileTransaction : Entity
 
     /// <summary>
     /// Идентификатор категории
+    /// Предполагается, что категория будет изменяться после импорта
     /// </summary>
-    public int? CategoryId { get; [UsedImplicitly] set; }
+    public required int CategoryId { get; init; }
 
     /// <summary>
     /// Категория транзакции
     /// </summary>
-    public required TransactionCategory Category { get; init; }
+    public EntryCategory? Category { get; [UsedImplicitly] set; }
 
     /// <summary>
     /// Идентификатор импортированного файла
     /// </summary>
-    public int? FileId { get; [UsedImplicitly] set; }
+    public required int FileId { get; init; }
 
     /// <summary>
     /// Импортированный файл
     /// </summary>
-    public required BankFile File { get; init; }
+    public BankFile? File { get; [UsedImplicitly] set; }
+
+    /// <summary>
+    /// Внешний ключ на банковский счет
+    /// </summary>
+    public required int BankAccountId { get; init; }
+
+    /// <summary>
+    /// Банковский счет, к которому относится запись
+    /// </summary>
+    public BankAccount? BankAccount { get; [UsedImplicitly] set; }
 }
