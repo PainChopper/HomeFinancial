@@ -9,5 +9,6 @@ public record TransactionInsertDto(
     DateTime Date,
     decimal Amount,
     string Description,
-    int CategoryId
+    int CategoryId,
+    int BankAccountId
 );

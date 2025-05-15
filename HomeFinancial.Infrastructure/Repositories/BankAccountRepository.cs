@@ -33,7 +33,7 @@ public sealed class BankAccountRepository : GenericRepository<BankAccount>, IBan
             return account;
         }
         
-        _logger.LogInformation("Создание нового счёта: BankId={BankId}, AccountId={AccountId}, Type={Type}", 
+        _logger.LogInformation("Создание нового счёта: BankId={BankId}, BankAccountId={BankAccountId}, Type={Type}", 
             bankId, accountId, accountType);
         
         var newAccount = new BankAccount

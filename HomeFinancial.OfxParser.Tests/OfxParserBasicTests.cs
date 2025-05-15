@@ -90,14 +90,14 @@ public class OfxParserBasicTests
         // Проверка первого счета
         var firstAccount = statements[0];
         Assert.Equal("A-BANK", firstAccount.BankId);
-        Assert.Equal("30101810ZZZZ987654", firstAccount.AccountId);
-        Assert.Equal("CHECKING", firstAccount.AccountType);
+        Assert.Equal("30101810ZZZZ987654", firstAccount.BankAccountId);
+        Assert.Equal("CHECKING", firstAccount.BankAccountType);
         
         // Проверка второго счета
         var secondAccount = statements[1];
         Assert.Equal("B-BANK", secondAccount.BankId);
-        Assert.Equal("40817810XXXX123456", secondAccount.AccountId);
-        Assert.Equal("SAVINGS", secondAccount.AccountType);
+        Assert.Equal("40817810XXXX123456", secondAccount.BankAccountId);
+        Assert.Equal("SAVINGS", secondAccount.BankAccountType);
     }
 
     [Fact]

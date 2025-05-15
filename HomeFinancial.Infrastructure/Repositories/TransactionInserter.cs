@@ -50,7 +50,7 @@ public class TransactionInserter : ITransactionInserter
 
         const string sql = """
                            COPY file_transactions
-                           (file_id, fit_id, date, amount, description, category_id)
+                           (file_id, fit_id, date, amount, description, category_id, bank_account_id)
                            FROM STDIN (FORMAT BINARY)
                            """;
         try
@@ -66,6 +66,7 @@ public class TransactionInserter : ITransactionInserter
                 await writer.WriteAsync(t.Amount,      NpgsqlDbType.Numeric, ct);
                 await writer.WriteAsync(t.Description, NpgsqlDbType.Text, ct);
                 await writer.WriteAsync(t.CategoryId,  NpgsqlDbType.Integer, ct);
+                await writer.WriteAsync(t.BankAccountId,   NpgsqlDbType.Integer, ct);
             }
 
             await writer.CompleteAsync(ct);

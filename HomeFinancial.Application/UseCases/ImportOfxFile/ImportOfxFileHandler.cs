@@ -25,6 +25,8 @@ public class ImportOfxFileHandler : IImportOfxFileHandler
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly ITransactionInserter _transactionInserter;
     private readonly ILeaseService _leaseService;
+    private readonly IBankRepository _bankRepository;
+    private readonly IBankAccountRepository _bankAccountRepository;
 
     public ImportOfxFileHandler(
         IOfxParser parser,
@@ -35,7 +37,9 @@ public class ImportOfxFileHandler : IImportOfxFileHandler
         IValidator<OfxTransactionDto> transactionValidator,
         IDateTimeProvider dateTimeProvider,
         ITransactionInserter transactionInserter,
-        ILeaseService leaseService)
+        ILeaseService leaseService,
+        IBankRepository bankRepository,
+        IBankAccountRepository bankAccountRepository)
     {
         _parser = parser ?? throw new ArgumentNullException(nameof(parser));
         _fileRepository = fileRepository ?? throw new ArgumentNullException(nameof(fileRepository));
@@ -46,6 +50,8 @@ public class ImportOfxFileHandler : IImportOfxFileHandler
         _dateTimeProvider = dateTimeProvider ?? throw new ArgumentNullException(nameof(dateTimeProvider));
         _transactionInserter = transactionInserter ?? throw new ArgumentNullException(nameof(transactionInserter));
         _leaseService = leaseService ?? throw new ArgumentNullException(nameof(leaseService));
+        _bankRepository = bankRepository ?? throw new ArgumentNullException(nameof(bankRepository));
+        _bankAccountRepository = bankAccountRepository ?? throw new ArgumentNullException(nameof(bankAccountRepository));
     }
     
     /// <inheritdoc />
@@ -70,71 +76,85 @@ public class ImportOfxFileHandler : IImportOfxFileHandler
 
         await foreach (var statementDto in statements)
         {
-            
+            // Обработка банковского аккаунта - получаем или создаём
+            var bank = await _bankRepository.GetOrCreateAsync(
+                statementDto.BankId, 
+                "Неизвестный банк",
+                ct);
+                
+            var account = await _bankAccountRepository.GetOrCreateAsync(
+                bank.Id,
+                statementDto.BankAccountId,
+                statementDto.BankAccountType.ToString(),
+                ct);
+                
+            // Обрабатываем транзакции в statement
+            await foreach (var t in statementDto.Transactions.WithCancellation(ct))
+            {
+                totalCount++;
+                
+                // Валидация транзакции через FluentValidation
+                var validationResult = await _transactionValidator.ValidateAsync(t, ct);
+                if (!validationResult.IsValid)
+                {
+                    var errorList = string.Join(", ", validationResult.Errors.Select(e => e.ErrorMessage));
+                    _logger.LogWarning("Транзакция [{Id}] пропущена: {Errors}", t.Id, errorList);
+                    errorCount++;
+                    continue;
+                }
+                
+                // Определяем или создаём категорию и формируем DTO
+                var categoryId = await _entryCategoryRepository.GetOrCreateCategoryIdAsync(t.Category);
+                var dto = new TransactionInsertDto(
+                    FileId: importedFile.Id,
+                    FitId: t.Id,
+                    Date: t.TranDate,
+                    Amount: t.Amount,
+                    Description: t.Description,
+                    CategoryId: categoryId,
+                    BankAccountId: account.Id
+                );
+                
+                batch.Add(dto);
+                
+                // Если пакет заполнен - отправляем на вставку
+                if (batch.Count < _importSettings.BatchSize)
+                {
+                    continue;
+                }
+                
+                await _leaseService.ValidateAndExtendLeaseAsync(command.FileName, leaseId, TimeSpan.FromMinutes(1));
+                var bulkResult = await _transactionInserter.BulkInsertCopyAsync(batch, ct);
+                importedCount += bulkResult.Inserted;
+                duplicatesCount += bulkResult.Duplicates;
+                batch.Clear();
+            }
         }
         
-        /*
-
-      // Потоковая обработка транзакций
-     
-      var transactions =  await result.Statements.SelectMany(s => s.Transactions;
-
-      await foreach (var t in transactions.WithCancellation(ct))
-      {
-          totalCount++;
-
-          // Валидация транзакции через FluentValidation
-          var validationResult = await _transactionValidator.ValidateAsync(t, ct);
-          if (!validationResult.IsValid)
-          {
-              var errorList = string.Join(", ", validationResult.Errors.Select(e => e.ErrorMessage));
-              _logger.LogWarning("Транзакция [{Id}] пропущена: {Errors}", t.Id, errorList);
-              errorCount++;
-              continue;
-          }
-
-          // Определяем или создаём категорию и формируем DTO
-          var categoryId = await _entryCategoryRepository.GetOrCreateCategoryIdAsync(t.Category);
-          var dto = new TransactionInsertDto(
-              FileId: importedFile.Id,
-              Id: t.Id,
-              Date: DateTime.SpecifyKind(t.TranDate, DateTimeKind.Utc),
-              Amount: t.Amount,
-              Description: t.Description,
-              CategoryId: categoryId
-          );
-
-          batch.Add(dto);
-
-          if (batch.Count < _importSettings.BatchSize)
-          {
-              continue;
-          }
-          await _leaseService.ValidateAndExtendLeaseAsync(command.FileName, leaseId, TimeSpan.FromMinutes(1));
-          var bulkResult = await _transactionInserter.BulkInsertCopyAsync(batch, ct);
-          importedCount += bulkResult.Inserted;
-          duplicatesCount += bulkResult.Duplicates;
-          batch.Clear();
-      }
-
-      if (batch.Count > 0)
-      {
-          await _leaseService.ValidateAndExtendLeaseAsync(command.FileName, leaseId, TimeSpan.FromMinutes(1));
-          var bulkResult = await _transactionInserter.BulkInsertCopyAsync(batch, ct);
-          importedCount += bulkResult.Inserted;
-          duplicatesCount += bulkResult.Duplicates;
-      }
-
-      importedFile.Status = BankFileStatus.Completed;
-      await _fileRepository.UpdateAsync(importedFile, ct);
-      await _leaseService.ReleaseLeaseAsync(command.FileName, leaseId);
-
-      _logger.LogInformation("Импорт OFX-файла {FileName} завершён. Всего транзакций: {TotalCount}, успешно импортировано: {ImportedCount}", command.FileName, totalCount, importedCount);
-
-      return new ApiResponse<ImportOfxFileResult>(true, new ImportOfxFileResult { TotalCount = totalCount, ImportedCount = importedCount, ErrorCount = errorCount, SkippedDuplicateCount = duplicatesCount });
-  */
-
-        return await Task.FromResult(new ApiResponse<ImportOfxFileResult>(true));
+        // Вставляем оставшиеся транзакции
+        if (batch.Count > 0)
+        {
+            await _leaseService.ValidateAndExtendLeaseAsync(command.FileName, leaseId, TimeSpan.FromMinutes(1));
+            var bulkResult = await _transactionInserter.BulkInsertCopyAsync(batch, ct);
+            importedCount += bulkResult.Inserted;
+            duplicatesCount += bulkResult.Duplicates;
+        }
+        
+        // Завершаем импорт
+        importedFile.Status = BankFileStatus.Completed;
+        await _fileRepository.UpdateAsync(importedFile, ct);
+        await _leaseService.ReleaseLeaseAsync(command.FileName, leaseId);
+        
+        _logger.LogInformation("Импорт OFX-файла {FileName} завершён. Всего транзакций: {TotalCount}, успешно импортировано: {ImportedCount}", 
+            command.FileName, totalCount, importedCount);
+            
+        return new ApiResponse<ImportOfxFileResult>(true, new ImportOfxFileResult { 
+            TotalCount = totalCount, 
+            ImportedCount = importedCount, 
+            ErrorCount = errorCount, 
+            SkippedDuplicateCount = duplicatesCount 
+        });
+        
     }
 
     /// <summary>

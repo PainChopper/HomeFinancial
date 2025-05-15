@@ -4,12 +4,12 @@ namespace HomeFinancial.OfxParser.Dto;
 /// Представляет выписку по банковскому счету в формате OFX
 /// </summary>
 /// <param name="BankId">Идентификатор банка</param>
-/// <param name="AccountId">Идентификатор счета</param>
-/// <param name="AccountType">Тип счета (например, CHECKING, SAVINGS, CREDITCARD и т.д.)</param>
+/// <param name="BankAccountId">Идентификатор счета</param>
+/// <param name="BankAccountType">Тип счета (например, CHECKING, SAVINGS, CREDITCARD и т.д.)</param>
 /// <param name="Transactions">Коллекция транзакций в выписке, предоставленная как асинхронный поток</param>
 public record OfxAccountStatementDto(
     string BankId,
-    string AccountId,
-    string AccountType,
+    string BankAccountId,
+    string BankAccountType,
     IAsyncEnumerable<OfxTransactionDto> Transactions
 );
