@@ -104,6 +104,7 @@ public class TransactionInserter : ITransactionInserter
         await conn.OpenAsync(ct);
 
         await using var cmd = new NpgsqlCommand(sql, conn);
+        // ReSharper disable once BitwiseOperatorOnEnumWithoutFlags
         cmd.Parameters.AddWithValue("fit_ids", NpgsqlDbType.Array | NpgsqlDbType.Text, fitIds);
 
         await using var reader = await cmd.ExecuteReaderAsync(ct);

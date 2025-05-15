@@ -12,7 +12,7 @@ public class Bank  : Entity
     /// <summary>
     /// Краткое наименование из файла OFX
     /// </summary>
-    public required string OfxCode { get; init; }
+    public required string BankId { get; init; }
 
     /// <summary>
     /// Полное название банка

@@ -10,7 +10,7 @@ public class BankConfiguration : IEntityTypeConfiguration<Bank>
     {
         builder.HasKey(b => b.Id);
 
-        builder.Property(b => b.OfxCode)
+        builder.Property(b => b.BankId)
             .IsRequired()
             .HasMaxLength(32);
 
@@ -35,6 +35,6 @@ public class BankConfiguration : IEntityTypeConfiguration<Bank>
         builder.Property(b => b.Address)
             .HasMaxLength(512);
 
-        builder.HasIndex(b => b.OfxCode).IsUnique();
+        builder.HasIndex(b => b.BankId).IsUnique();
     }
 }

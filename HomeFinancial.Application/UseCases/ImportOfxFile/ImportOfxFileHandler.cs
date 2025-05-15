@@ -56,7 +56,7 @@ public class ImportOfxFileHandler : IImportOfxFileHandler
 
         var leaseId = await _leaseService.AcquireLeaseAsync(command.FileName, TimeSpan.FromMinutes(1));
         
-        var importedFile = await CreateFile(command.FileName, ct, leaseId);
+        var importedFile = await CreateFile(command.FileName, leaseId, ct);
 
         // Пакет DTO для пакетной вставки
         var batch = new List<TransactionInsertDto>(_importSettings.BatchSize);
@@ -141,7 +141,8 @@ public class ImportOfxFileHandler : IImportOfxFileHandler
     /// Создаёт запись об импортируемом файле
     /// </summary>
     private async Task<BankFile> CreateFile(string fileName,
-        CancellationToken ct, Guid leaseId)
+        Guid leaseId,
+        CancellationToken ct)
     {
         var importedFile = await _fileRepository.GetByFileNameAsync(fileName);
 

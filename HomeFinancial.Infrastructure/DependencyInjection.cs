@@ -41,10 +41,11 @@ public static class DependencyInjection
         services.AddSingleton<RetryPolicyHelper>();
                 
         // Регистрация репозиториев
-        services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
         services.AddScoped<IEntryCategoryRepository, EntryCategoryRepository>();
         services.AddScoped<IFileRepository, FileRepository>();
         services.AddScoped<ITransactionInserter, TransactionInserter>();
+        services.AddScoped<IBankRepository, BankRepository>();
+        services.AddScoped<IBankAccountRepository, BankAccountRepository>();
 
        
         // Hosted service для прогрева кэша категорий

@@ -2,7 +2,8 @@
 
 Использовать var.
 Использовать Raw String Literals.
-Не использовать MediatR, ConfigureAwait(false), ReadSubtree().
+Не использовать MediatR, ConfigureAwait(false), ReadSubtree(), AsNoTracking().
+
 Называть cancellationToken ct.
 
 Стараться использовать паттерны, если уместно.

@@ -16,6 +16,6 @@ public class FileRepository(ApplicationDbContext dbContext)
     /// </summary>
     public async Task<BankFile?> GetByFileNameAsync(string fileName)
     {
-        return await DbSet.AsNoTracking().FirstOrDefaultAsync(f => f.FileName == fileName);
+        return await DbSet.FirstOrDefaultAsync(f => f.FileName == fileName);
     }
 }
