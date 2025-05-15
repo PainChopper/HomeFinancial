@@ -17,6 +17,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "SolutionStaf", "SolutionSta
 		SOLUTION_RULES.md = SOLUTION_RULES.md
 		.windsurfrules = .windsurfrules
 		Directory.Build.props = Directory.Build.props
+		README.md = README.md
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HomeFinancial.OfxParser.Tests", "HomeFinancial.OfxParser.Tests\HomeFinancial.OfxParser.Tests.csproj", "{3F7B1B73-370E-4738-BC74-E67BC38FD949}"
