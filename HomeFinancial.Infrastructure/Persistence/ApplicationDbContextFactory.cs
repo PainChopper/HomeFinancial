@@ -16,8 +16,8 @@ public class ApplicationDbContextFactory : IDesignTimeDbContextFactory<Applicati
 
         var connectionString = configuration.GetConnectionString("Postgres");
         var optionsBuilder = new DbContextOptionsBuilder<ApplicationDbContext>();
-        optionsBuilder.UseNpgsql(connectionString)
-            .UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking)
+        optionsBuilder.UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking).UseNpgsql(connectionString)
+            
             .UseSnakeCaseNamingConvention();
 
         return new ApplicationDbContext(optionsBuilder.Options);

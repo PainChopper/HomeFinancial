@@ -85,7 +85,7 @@ public class ImportOfxFileHandler : IImportOfxFileHandler
             var account = await _bankAccountRepository.GetOrCreateAsync(
                 bank.Id,
                 statementDto.BankAccountId,
-                statementDto.BankAccountType.ToString(),
+                statementDto.BankAccountType,
                 ct);
                 
             // Обрабатываем транзакции в statement
