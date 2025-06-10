@@ -29,8 +29,4 @@
       <ProjectReference Include="..\HomeFinancial.Domain\HomeFinancial.Domain.csproj" />
     </ItemGroup>
 
-    <ItemGroup>
-      <Folder Include="Migrations\" />
-    </ItemGroup>
-
 </Project>

@@ -44,14 +44,14 @@ public sealed class EntryCategoryRepository : GenericRepository<EntryCategory>, 
         {
             const string sql = """
                                WITH ins AS (
-                                   INSERT INTO transaction_categories (name)
+                                   INSERT INTO entry_categories (name)
                                    VALUES (@CategoryName)
                                    ON CONFLICT (name) DO NOTHING
                                    RETURNING id
                                )
                                SELECT id FROM ins
                                UNION ALL
-                               SELECT id FROM transaction_categories WHERE name = @CategoryName
+                               SELECT id FROM entry_categories WHERE name = @CategoryName
                                LIMIT 1;
                                """;
 

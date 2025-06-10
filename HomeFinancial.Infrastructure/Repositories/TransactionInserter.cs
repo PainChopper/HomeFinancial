@@ -49,7 +49,7 @@ public class TransactionInserter : ITransactionInserter
         await conn.OpenAsync(ct);
 
         const string sql = """
-                           COPY file_transactions
+                           COPY statement_entries
                            (file_id, fit_id, date, amount, description, category_id, bank_account_id)
                            FROM STDIN (FORMAT BINARY)
                            """;
@@ -97,7 +97,7 @@ public class TransactionInserter : ITransactionInserter
 
         const string sql = """
                            SELECT fit_id
-                           FROM file_transactions
+                           FROM statement_entries
                            WHERE fit_id = ANY (@fit_ids)
                            """;
 
