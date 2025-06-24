@@ -94,7 +94,10 @@ public class OfxParser : IOfxParser
         decimal? ParseAmount(string amountString)
         {
             return !string.IsNullOrEmpty(amountString) &&
-                   decimal.TryParse(amountString.Replace('.', ','), 
+                   decimal.TryParse(
+                       amountString,
+                       NumberStyles.Number,
+                       CultureInfo.InvariantCulture,
                        out var amount)
                 ? amount
                 : null;
