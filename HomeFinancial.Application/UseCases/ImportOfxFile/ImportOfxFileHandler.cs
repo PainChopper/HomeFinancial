@@ -70,17 +70,18 @@ public class ImportOfxFileHandler : IImportOfxFileHandler
             {
                 await _importFileService.ValidateAndExtendAsync(context.Session);
                 var bulkResult = await _transactionInserter.BulkInsertCopyAsync(context.Batch, ct);
-                context.Metrics += new StatementProcessMetrics(bulkResult.Inserted, bulkResult.Duplicates, 0);
+                context.Inserted += bulkResult.Inserted;
+                context.Duplicates += bulkResult.Duplicates;
             }
             
             // Завершаем импорт
             await _importFileService.CompleteAsync(context.Session, ct);
 
             var result = new ImportOfxFileResult { 
-                TotalCount = context.Metrics.Total, 
-                ImportedCount = context.Metrics.Inserted, 
-                ErrorCount = context.Metrics.Errors, 
-                SkippedDuplicateCount = context.Metrics.Duplicates 
+                TotalCount = context.Total, 
+                ImportedCount = context.Inserted, 
+                ErrorCount = context.Errors, 
+                SkippedDuplicateCount = context.Duplicates 
             };
             
             _logger.LogInformation("Импорт OFX-файла {FileName} завершён. Всего транзакций: {TotalCount}, успешно импортировано: {ImportedCount}", 
@@ -128,12 +129,13 @@ public class ImportOfxFileHandler : IImportOfxFileHandler
                 if (context.Batch.Count >= _importSettings.BatchSize)
                 {
                     var bulkResult = await SaveBatchAsync(context, ct);
-                    context.Metrics += new StatementProcessMetrics(bulkResult.Inserted, bulkResult.Duplicates, 0);
+                    context.Inserted += bulkResult.Inserted;
+                    context.Duplicates += bulkResult.Duplicates;
                 }
             }
             else
             {
-                context.Metrics += new StatementProcessMetrics(0, 0, 1);
+                context.Errors++;
             }
         }
     }

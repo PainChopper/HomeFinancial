@@ -14,9 +14,24 @@ internal sealed class ImportContext
     public List<TransactionInsertDto> Batch { get; }
     
     /// <summary>
-    /// Метрики импортирования
+    /// Количество вставленных транзакций
     /// </summary>
-    public StatementProcessMetrics Metrics { get; set; }
+    public int Inserted { get; set; }
+    
+    /// <summary>
+    /// Количество пропущенных дубликатов
+    /// </summary>
+    public int Duplicates { get; set; }
+    
+    /// <summary>
+    /// Количество ошибок
+    /// </summary>
+    public int Errors { get; set; }
+    
+    /// <summary>
+    /// Общее количество обработанных транзакций
+    /// </summary>
+    public int Total => Inserted + Duplicates + Errors;
     
     /// <summary>
     /// Импортируемый файл
