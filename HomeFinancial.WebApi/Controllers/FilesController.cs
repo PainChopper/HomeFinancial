@@ -1,5 +1,6 @@
 using FluentValidation;
 using HomeFinancial.Application.Common;
+using HomeFinancial.Application.Interfaces;
 using HomeFinancial.Application.UseCases.ImportOfxFile;
 using Microsoft.AspNetCore.Mvc;
 

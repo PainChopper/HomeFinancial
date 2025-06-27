@@ -1,6 +1,7 @@
 using HomeFinancial.Application.Common;
+using HomeFinancial.Application.UseCases.ImportOfxFile;
 
-namespace HomeFinancial.Application.UseCases.ImportOfxFile;
+namespace HomeFinancial.Application.Interfaces;
 
 /// <summary>
 /// Интерфейс обработчика импорта OFX-файла

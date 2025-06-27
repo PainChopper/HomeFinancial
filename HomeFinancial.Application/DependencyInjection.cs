@@ -4,6 +4,7 @@ using HomeFinancial.OfxParser;
 using HomeFinancial.OfxParser.Dto;
 using Microsoft.Extensions.DependencyInjection;
 using FluentValidation;
+using HomeFinancial.Application.Interfaces;
 
 namespace HomeFinancial.Application;
 
@@ -16,6 +17,8 @@ public static class DependencyInjection
         services.AddOptions<ImportSettings>()
             .BindConfiguration("ImportSettings");
         services.AddSingleton<IValidator<OfxTransactionDto>, OfxTransactionValidator>();
+        services.AddScoped<IImportFileService, ImportFileService>();
+
         return services;
     }
 }

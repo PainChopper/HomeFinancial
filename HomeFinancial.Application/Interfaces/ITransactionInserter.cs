@@ -1,4 +1,5 @@
 using HomeFinancial.Application.Dtos;
+using HomeFinancial.Application.UseCases.ImportOfxFile;
 
 namespace HomeFinancial.Application.Interfaces;
 
@@ -9,8 +10,8 @@ public interface ITransactionInserter
     /// </summary>
     /// <param name="transactions">Список банковских транзакций для вставки.</param>
     /// <param name="ct">Токен отмены для прерывания операции.</param>
-    /// <returns>Кортеж: (количество созданных транзакций, количество пропущенных дубликатов)</returns>
-    Task<(int Inserted, int Duplicates)> BulkInsertCopyAsync(
+    /// <returns>Результат операции вставки: количество созданных транзакций и количество пропущенных дубликатов</returns>
+    Task<BulkInsertResult> BulkInsertCopyAsync(
         IList<TransactionInsertDto> transactions, 
         CancellationToken ct = default);
 }

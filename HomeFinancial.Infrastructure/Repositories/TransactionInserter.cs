@@ -1,5 +1,6 @@
 using HomeFinancial.Application.Dtos;
 using HomeFinancial.Application.Interfaces;
+using HomeFinancial.Application.UseCases.ImportOfxFile;
 using HomeFinancial.Infrastructure.Persistence;
 using Microsoft.Extensions.Logging;
 using Npgsql;
@@ -19,7 +20,7 @@ public class TransactionInserter : ITransactionInserter
     }
 
     /// <inheritdoc/>
-    public async Task<(int Inserted, int Duplicates)> BulkInsertCopyAsync(
+    public async Task<BulkInsertResult> BulkInsertCopyAsync(
         IList<TransactionInsertDto> transactions,
         CancellationToken ct)
     {
@@ -42,7 +43,7 @@ public class TransactionInserter : ITransactionInserter
         if (newItems.Count == 0)
         {
             _logger.LogInformation("Новых транзакций для вставки через COPY не найдено.");
-            return (0, existingFitIds.Count);
+            return new BulkInsertResult(0, existingFitIds.Count);
         }
 
         await using var conn = new NpgsqlConnection(_connectionStrings.Postgres);
@@ -73,7 +74,7 @@ public class TransactionInserter : ITransactionInserter
 
             _logger.LogInformation("Бинарный COPY завершён. Вставлено {Count} транзакций.", newItems.Count);
 
-            return (newItems.Count, existingFitIds.Count);
+            return new BulkInsertResult(newItems.Count, existingFitIds.Count);
         }
         catch (Exception ex)
         {
