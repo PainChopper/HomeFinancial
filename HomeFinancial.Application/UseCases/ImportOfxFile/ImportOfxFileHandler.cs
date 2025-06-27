@@ -14,7 +14,7 @@ public class ImportOfxFileHandler : IImportOfxFileHandler
     private readonly IOfxParser _parser;
     private readonly ILogger _logger;
     private readonly ImportSettings _importSettings;
-    private readonly IImportFileService _importFileService;
+    private readonly IFileImportSessionFactory _fileImportSessionFactory;
     private readonly IStatementProcessor _statementProcessor;
 
     /// <summary>
@@ -24,13 +24,13 @@ public class ImportOfxFileHandler : IImportOfxFileHandler
         IOfxParser parser,
         ILogger<ImportOfxFileHandler> logger,
         IOptions<ImportSettings> importSettings,
-        IImportFileService importFileService,
+        IFileImportSessionFactory fileImportSessionFactory,
         IStatementProcessor statementProcessor)
     {
         _parser = parser;
         _logger = logger;
         _importSettings = importSettings.Value;
-        _importFileService = importFileService;
+        _fileImportSessionFactory = fileImportSessionFactory;
         _statementProcessor = statementProcessor;
     }
     
@@ -39,7 +39,7 @@ public class ImportOfxFileHandler : IImportOfxFileHandler
     {
         _logger.LogInformation("Импорт OFX-файла: {FileName}", command.FileName);
 
-        var session = await _importFileService.StartAsync(command.FileName, ct);
+        await using var session = await _fileImportSessionFactory.StartAsync(command.FileName, ct);
         try
         {
             var context = new ImportContext(_importSettings.BatchSize, session.File);
@@ -55,7 +55,7 @@ public class ImportOfxFileHandler : IImportOfxFileHandler
             await _statementProcessor.FlushBatchAsync(context, ct);
             
             // Завершаем импорт
-            await _importFileService.CompleteAsync(session, ct);
+            await session.CompleteAsync(ct);
 
             var result = new ImportOfxFileResult { 
                 TotalCount = context.Total, 
@@ -69,9 +69,11 @@ public class ImportOfxFileHandler : IImportOfxFileHandler
 
             return new ApiResponse<ImportOfxFileResult>(true, result);
         }
-        finally
+        catch (Exception)
         {
-            await _importFileService.ReleaseAsync(session);
+            // При возникновении исключения await using в блоке finally все равно вызовет DisposeAsync,
+            // который освободит лиз на файл
+            throw;
         }
     }
 }

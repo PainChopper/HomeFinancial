@@ -13,7 +13,7 @@ namespace HomeFinancial.Application.UseCases.ImportOfxFile;
 /// <summary>
 /// Реализация процессора банковских выписок
 /// </summary>
-internal class StatementProcessor : IStatementProcessor
+public class StatementProcessor : IStatementProcessor
 {
     private readonly ILogger _logger;
     private readonly IValidator<OfxTransactionDto> _transactionValidator;
@@ -21,7 +21,6 @@ internal class StatementProcessor : IStatementProcessor
     private readonly IBankRepository _bankRepository;
     private readonly IBankAccountRepository _bankAccountRepository;
     private readonly IEntryCategoryRepository _entryCategoryRepository;
-    private readonly IImportFileService _importFileService;
     private readonly ImportSettings _importSettings;
 
     /// <summary>
@@ -34,8 +33,7 @@ internal class StatementProcessor : IStatementProcessor
         ITransactionInserter transactionInserter,
         IBankRepository bankRepository,
         IBankAccountRepository bankAccountRepository,
-        IEntryCategoryRepository categoryRepository,
-        IImportFileService importFileService)
+        IEntryCategoryRepository categoryRepository)
     {
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _importSettings = importSettings.Value ?? throw new ArgumentNullException(nameof(importSettings));
@@ -44,7 +42,6 @@ internal class StatementProcessor : IStatementProcessor
         _bankRepository = bankRepository ?? throw new ArgumentNullException(nameof(bankRepository));
         _bankAccountRepository = bankAccountRepository ?? throw new ArgumentNullException(nameof(bankAccountRepository));
         _entryCategoryRepository = categoryRepository ?? throw new ArgumentNullException(nameof(categoryRepository));
-        _importFileService = importFileService ?? throw new ArgumentNullException(nameof(importFileService));
     }
 
     /// <inheritdoc />

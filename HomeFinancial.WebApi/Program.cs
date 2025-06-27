@@ -29,7 +29,7 @@ builder.Host.UseSerilog()
     {
         services
             .AddInfrastructure(context.Configuration)
-            .AddApplicationServices()
+            .AddApplicationServices(context.Configuration)
             .AddSwaggerWithXmlDocs()
             .AddControllers()
             .ConfigureCustomApiBehavior();
