@@ -6,7 +6,7 @@ namespace HomeFinancial.Application.UseCases.ImportOfxFile;
 /// <summary>
 /// Контекст импорта OFX-файла
 /// </summary>
-internal sealed class ImportContext
+public sealed class ImportContext
 {
     /// <summary>
     /// Пакет DTO для пакетной вставки
@@ -37,21 +37,15 @@ internal sealed class ImportContext
     /// Импортируемый файл
     /// </summary>
     public BankFile ImportedFile { get; }
-    
-    /// <summary>
-    /// Идентификатор сессии импорта
-    /// </summary>
-    public ImportFileSession Session { get; }
 
     /// <summary>
     /// Создает новый экземпляр контекста импорта
     /// </summary>
-    /// <param name="session">Сессия импорта</param>
     /// <param name="batchSize">Размер пакета для вставки</param>
-    public ImportContext(ImportFileSession session, int batchSize)
+    /// <param name="importedFile"></param>
+    public ImportContext(int batchSize, BankFile importedFile)
     {
-        Session = session;
-        ImportedFile = session.File;
+        ImportedFile = importedFile;
         Batch = new List<TransactionInsertDto>(batchSize);
     }
 }

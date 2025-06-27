@@ -18,6 +18,7 @@ public static class DependencyInjection
             .BindConfiguration("ImportSettings");
         services.AddSingleton<IValidator<OfxTransactionDto>, OfxTransactionValidator>();
         services.AddScoped<IImportFileService, ImportFileService>();
+        services.AddScoped<IStatementProcessor, StatementProcessor>();
 
         return services;
     }
