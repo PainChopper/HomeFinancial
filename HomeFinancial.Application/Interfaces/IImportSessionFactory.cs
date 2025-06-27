@@ -5,8 +5,8 @@ namespace HomeFinancial.Application.Interfaces;
 /// <summary>
 /// Сервис для создания сессий импорта файлов
 /// </summary>
-public interface IFileImportSessionFactory
+public interface IImportSessionFactory
 {
     /// <summary>Начать импорт. Возвращает сессию с данными файла и lease.</summary>
-    Task<FileImportSession> StartAsync(string fileName, CancellationToken ct);
+    Task<ImportSession> StartAsync(string fileName, CancellationToken ct);
 }

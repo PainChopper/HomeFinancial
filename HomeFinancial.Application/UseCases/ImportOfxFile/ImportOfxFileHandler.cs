@@ -14,7 +14,7 @@ public class ImportOfxFileHandler : IImportOfxFileHandler
     private readonly IOfxParser _parser;
     private readonly ILogger _logger;
     private readonly ImportSettings _importSettings;
-    private readonly IFileImportSessionFactory _fileImportSessionFactory;
+    private readonly IImportSessionFactory _importSessionFactory;
     private readonly IStatementProcessor _statementProcessor;
 
     /// <summary>
@@ -24,13 +24,13 @@ public class ImportOfxFileHandler : IImportOfxFileHandler
         IOfxParser parser,
         ILogger<ImportOfxFileHandler> logger,
         IOptions<ImportSettings> importSettings,
-        IFileImportSessionFactory fileImportSessionFactory,
+        IImportSessionFactory importSessionFactory,
         IStatementProcessor statementProcessor)
     {
         _parser = parser;
         _logger = logger;
         _importSettings = importSettings.Value;
-        _fileImportSessionFactory = fileImportSessionFactory;
+        _importSessionFactory = importSessionFactory;
         _statementProcessor = statementProcessor;
     }
     
@@ -39,7 +39,7 @@ public class ImportOfxFileHandler : IImportOfxFileHandler
     {
         _logger.LogInformation("Импорт OFX-файла: {FileName}", command.FileName);
 
-        await using var session = await _fileImportSessionFactory.StartAsync(command.FileName, ct);
+        await using var session = await _importSessionFactory.StartAsync(command.FileName, ct);
         try
         {
             var context = new ImportContext(_importSettings.BatchSize, session.File);

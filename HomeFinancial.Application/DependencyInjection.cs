@@ -20,7 +20,7 @@ public static class DependencyInjection
             .Configure<ImportSettings>(configuration.GetSection("Import"));
             
         services.AddSingleton<IValidator<OfxTransactionDto>, OfxTransactionValidator>();
-        services.AddScoped<IFileImportSessionFactory, FileImportSessionFactory>();
+        services.AddScoped<IImportSessionFactory, ImportSessionFactory>();
         services.AddScoped<IStatementProcessor, StatementProcessor>();
 
         return services;

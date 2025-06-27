@@ -8,7 +8,7 @@ namespace HomeFinancial.Application.UseCases.ImportOfxFile;
 /// <summary>
 /// Сервис, создающий сессии импорта файла
 /// </summary>
-internal sealed class FileImportSessionFactory : IFileImportSessionFactory
+internal sealed class ImportSessionFactory : IImportSessionFactory
 {
     private readonly IFileRepository _fileRepository;
     private readonly ILeaseService _leaseService;
@@ -17,7 +17,7 @@ internal sealed class FileImportSessionFactory : IFileImportSessionFactory
     /// <summary>
     /// Создает новый экземпляр сервиса создания сессий импорта файлов
     /// </summary>
-    public FileImportSessionFactory(
+    public ImportSessionFactory(
         IFileRepository fileRepository, 
         ILeaseService leaseService, 
         IDateTimeProvider dateTimeProvider)
@@ -28,7 +28,7 @@ internal sealed class FileImportSessionFactory : IFileImportSessionFactory
     }
 
     /// <inheritdoc />
-    public async Task<FileImportSession> StartAsync(string fileName, CancellationToken ct)
+    public async Task<ImportSession> StartAsync(string fileName, CancellationToken ct)
     {
         var leaseId = await _leaseService.AcquireLeaseAsync(fileName, TimeSpan.FromMinutes(1));
 
@@ -52,6 +52,6 @@ internal sealed class FileImportSessionFactory : IFileImportSessionFactory
         };
         file = await _fileRepository.CreateAsync(file, ct);
 
-        return new FileImportSession(file, leaseId, _fileRepository, _leaseService);
+        return new ImportSession(file, leaseId, _fileRepository, _leaseService);
     }
 }

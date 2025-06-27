@@ -7,7 +7,7 @@ namespace HomeFinancial.Application.UseCases.ImportOfxFile;
 /// <summary>
 /// Сессия импорта файла с управлением жизненным циклом
 /// </summary>
-public sealed class FileImportSession : IAsyncDisposable
+public sealed class ImportSession : IAsyncDisposable
 {
     private readonly IFileRepository _fileRepository;
     private readonly ILeaseService _leaseService;
@@ -30,7 +30,7 @@ public sealed class FileImportSession : IAsyncDisposable
     /// <param name="leaseId">Идентификатор лиза</param>
     /// <param name="fileRepository">Репозиторий файлов</param>
     /// <param name="leaseService">Сервис управления лизами</param>
-    public FileImportSession(
+    public ImportSession(
         BankFile file, 
         Guid leaseId, 
         IFileRepository fileRepository, 
