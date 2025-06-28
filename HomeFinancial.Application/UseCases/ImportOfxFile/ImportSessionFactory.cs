@@ -1,6 +1,5 @@
 using HomeFinancial.Application.Common;
 using HomeFinancial.Application.Interfaces;
-using HomeFinancial.Domain.Entities;
 using HomeFinancial.Domain.Repositories;
 
 namespace HomeFinancial.Application.UseCases.ImportOfxFile;
@@ -28,30 +27,15 @@ internal sealed class ImportSessionFactory : IImportSessionFactory
     }
 
     /// <inheritdoc />
-    public async Task<ImportSession> StartAsync(string fileName, CancellationToken ct)
+    public Task<ImportSession> StartAsync(string fileName, CancellationToken ct)
     {
-        var leaseId = await _leaseService.AcquireLeaseAsync(fileName, TimeSpan.FromMinutes(1));
-
-        var existing = await _fileRepository.GetByFileNameAsync(fileName);
-        if (existing != null)
-        {
-            if (existing.Status == BankFileStatus.Completed)
-            {
-                await _leaseService.ReleaseLeaseAsync(existing.FileName, leaseId);
-                throw new InvalidOperationException($"Файл '{existing.FileName}' уже импортирован.");
-            }
-
-            await _fileRepository.DeleteAsync(existing.Id, ct);
-        }
-
-        var file = new BankFile
-        {
-            FileName = fileName,
-            ImportedAt = _dateTimeProvider.UtcNow,
-            Status = BankFileStatus.InProgress
-        };
-        file = await _fileRepository.CreateAsync(file, ct);
-
-        return new ImportSession(file, leaseId, _fileRepository, _leaseService);
+        fileName = fileName ?? throw new ArgumentNullException(nameof(fileName));
+        
+        return ImportSession.CreateAsync(
+            fileName, 
+            _fileRepository, 
+            _leaseService, 
+            _dateTimeProvider, 
+            ct);
     }
 }
