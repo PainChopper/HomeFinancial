@@ -12,6 +12,9 @@ public sealed class ImportSession : IAsyncDisposable
 {
     private readonly IFileRepository _fileRepository;
     private readonly ILeaseService _leaseService;
+    
+    private readonly Guid _leaseId;
+    
     private bool _isCompleted;
     private bool _isDisposed;
     
@@ -20,11 +23,6 @@ public sealed class ImportSession : IAsyncDisposable
     /// </summary>
     public BankFile File { get; }
     
-    /// <summary>
-    /// Идентификатор лиза на файл
-    /// </summary>
-    private Guid LeaseId { get; }
-
     /// <summary>
     /// Создает новый экземпляр сессии импорта файла с проверкой и созданием BankFile
     /// </summary>
@@ -93,7 +91,7 @@ public sealed class ImportSession : IAsyncDisposable
         ILeaseService leaseService)
     {
         File = file ?? throw new ArgumentNullException(nameof(file));
-        LeaseId = leaseId;
+        _leaseId = leaseId;
         _fileRepository = fileRepository ?? throw new ArgumentNullException(nameof(fileRepository));
         _leaseService = leaseService ?? throw new ArgumentNullException(nameof(leaseService));
         _isCompleted = false;
@@ -119,7 +117,7 @@ public sealed class ImportSession : IAsyncDisposable
         
         File.Status = BankFileStatus.Completed;
         await _fileRepository.UpdateAsync(File, ct);
-        await _leaseService.ReleaseLeaseAsync(File.FileName, LeaseId);
+        await _leaseService.ReleaseLeaseAsync(File.FileName, _leaseId);
         _isCompleted = true;
     }
 
@@ -130,7 +128,7 @@ public sealed class ImportSession : IAsyncDisposable
     {
         if (!_isCompleted && !_isDisposed)
         {
-            await _leaseService.ReleaseLeaseAsync(File.FileName, LeaseId);
+            await _leaseService.ReleaseLeaseAsync(File.FileName, _leaseId);
         }
         
         _isDisposed = true;

@@ -40,40 +40,31 @@ public class ImportOfxFileHandler : IImportOfxFileHandler
         _logger.LogInformation("Импорт OFX-файла: {FileName}", command.FileName);
 
         await using var session = await _importSessionFactory.StartAsync(command.FileName, ct);
-        try
+        var context = new ImportContext(_importSettings.BatchSize, session.File);
+            
+        var statements = _parser.ParseStatementsAsync(command.FileStream, ct);
+
+        await foreach (var statementDto in statements)
         {
-            var context = new ImportContext(_importSettings.BatchSize, session.File);
-            
-            var statements = _parser.ParseStatementsAsync(command.FileStream, ct);
-
-            await foreach (var statementDto in statements)
-            {
-                await _statementProcessor.ProcessStatementAsync(statementDto, context, ct);
-            }
-            
-            // Вставляем оставшиеся транзакции
-            await _statementProcessor.FlushBatchAsync(context, ct);
-            
-            // Завершаем импорт
-            await session.CompleteAsync(ct);
-
-            var result = new ImportOfxFileResult { 
-                TotalCount = context.Total, 
-                ImportedCount = context.Inserted, 
-                ErrorCount = context.Errors, 
-                SkippedDuplicateCount = context.Duplicates 
-            };
-            
-            _logger.LogInformation("Импорт OFX-файла {FileName} завершён. Всего транзакций: {TotalCount}, успешно импортировано: {ImportedCount}", 
-                command.FileName, result.TotalCount, result.ImportedCount);
-
-            return new ApiResponse<ImportOfxFileResult>(true, result);
+            await _statementProcessor.ProcessStatementAsync(statementDto, context, ct);
         }
-        catch (Exception)
-        {
-            // При возникновении исключения await using в блоке finally все равно вызовет DisposeAsync,
-            // который освободит лиз на файл
-            throw;
-        }
+            
+        // Вставляем оставшиеся транзакции
+        await _statementProcessor.FlushBatchAsync(context, ct);
+            
+        // Завершаем импорт
+        await session.CompleteAsync(ct);
+
+        var result = new ImportOfxFileResult { 
+            TotalCount = context.Total, 
+            ImportedCount = context.Inserted, 
+            ErrorCount = context.Errors, 
+            SkippedDuplicateCount = context.Duplicates 
+        };
+            
+        _logger.LogInformation("Импорт OFX-файла {FileName} завершён. Всего транзакций: {TotalCount}, успешно импортировано: {ImportedCount}", 
+            command.FileName, result.TotalCount, result.ImportedCount);
+
+        return new ApiResponse<ImportOfxFileResult>(true, result);
     }
 }
