@@ -65,11 +65,7 @@ public class StatementProcessor : IStatementProcessor
         // Обрабатываем транзакции
         await foreach (var tran in statementDto.Transactions.WithCancellation(ct))
         {
-            var dto = await CreateTransactionAsync(
-                tran,
-                context.ImportedFile,
-                account,
-                ct);
+            var dto = await CreateTransactionAsync(context.FileId, tran, account, ct);
             
             if (dto != null)
             {
@@ -91,14 +87,12 @@ public class StatementProcessor : IStatementProcessor
     /// <summary>
     /// Обрабатывает отдельную транзакцию из statement-а 
     /// </summary>
+    /// <param name="fileId"></param>
     /// <param name="transaction">Транзакция для обработки</param>
-    /// <param name="importedFile">Импортируемый файл</param>
     /// <param name="account">Банковский счёт</param>
     /// <param name="ct">Токен отмены</param>
     /// <returns>DTO транзакции для вставки, null если транзакция не прошла валидацию</returns>
-    private async Task<TransactionInsertDto?> CreateTransactionAsync(
-        OfxTransactionDto transaction,
-        BankFile importedFile,
+    private async Task<TransactionInsertDto?> CreateTransactionAsync(int fileId, OfxTransactionDto transaction,
         BankAccount account,
         CancellationToken ct)
     {
@@ -114,7 +108,7 @@ public class StatementProcessor : IStatementProcessor
         // Определяем или создаём категорию и формируем DTO
         var categoryId = await _entryCategoryRepository.GetOrCreateCategoryIdAsync(transaction.Category);
         return new TransactionInsertDto(
-            FileId: importedFile.Id,
+            FileId: fileId,
             FitId: transaction.Id,
             Date: transaction.TranDate,
             Amount: transaction.Amount,

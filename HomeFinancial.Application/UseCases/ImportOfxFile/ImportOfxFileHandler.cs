@@ -1,5 +1,6 @@
 using HomeFinancial.Application.Common;
 using HomeFinancial.Application.Interfaces;
+using HomeFinancial.Domain.Entities;
 using HomeFinancial.OfxParser;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -40,7 +41,7 @@ public class ImportOfxFileHandler : IImportOfxFileHandler
         _logger.LogInformation("Импорт OFX-файла: {FileName}", command.FileName);
 
         await using var session = await _importSessionFactory.StartAsync(command.FileName, ct);
-        var context = new ImportContext(_importSettings.BatchSize, session.File);
+        var context = new ImportContext(session.File.Id, _importSettings.BatchSize);
             
         var statements = _parser.ParseStatementsAsync(command.FileStream, ct);
 

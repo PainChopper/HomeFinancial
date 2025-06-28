@@ -1,5 +1,4 @@
 using HomeFinancial.Application.Dtos;
-using HomeFinancial.Domain.Entities;
 
 namespace HomeFinancial.Application.UseCases.ImportOfxFile;
 
@@ -34,18 +33,18 @@ public sealed class ImportContext
     public int Total => Inserted + Duplicates + Errors;
     
     /// <summary>
-    /// Импортируемый файл
+    ///  Идентификатор Импортируемого файла
     /// </summary>
-    public BankFile ImportedFile { get; }
+    public int FileId { get; }
 
     /// <summary>
     /// Создает новый экземпляр контекста импорта
     /// </summary>
+    /// <param name="fileId"></param>
     /// <param name="batchSize">Размер пакета для вставки</param>
-    /// <param name="importedFile"></param>
-    public ImportContext(int batchSize, BankFile importedFile)
+    public ImportContext(int fileId, int batchSize)
     {
-        ImportedFile = importedFile;
+        FileId = fileId;
         Batch = new List<TransactionInsertDto>(batchSize);
     }
 }
